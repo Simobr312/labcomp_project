@@ -1,0 +1,4 @@
+lark
+fastapi
+uvicorn
+pydantic

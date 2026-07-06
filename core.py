@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from parser import parse_ast, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall
 
 # == Core Geometric Data Structures == #
-
 @dataclass(frozen=True)
 class Point:
     x: float
@@ -16,7 +15,6 @@ class Point:
 
 @dataclass
 class GeometricComplex:
-    # A true simplicial complex is defined as a closure of faces
     simplices: Set[FrozenSet[Point]]
 
     @property
@@ -149,6 +147,8 @@ def initial_environment() -> Environment:
     env = bind(env, "dim", ObservationalOperator("dim", dim_impl, (GeometricComplex,), int))
     env = bind(env, "num_vert", ObservationalOperator("num_vert", num_vert_impl, (GeometricComplex,), int))
 
+    env = bind(env, "difference", ConstructiveOperator("difference", difference_impl, (GeometricComplex, GeometricComplex), GeometricComplex))
+
     return env
 
 # == EVALUATION ENGINE == #
@@ -159,7 +159,6 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
     if isinstance(expr, (int, float)):
         return expr
 
-    # Reference Lookups
     if isinstance(expr, str):
         val = lookup(env, expr)
         if isinstance(val, Operator):
@@ -198,7 +197,6 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
 
     raise TypeError(f"Unknown geometric expression node type: {type(expr)}")
 
-
 def execute_statement(stmt: Statement, env: Environment) -> Environment:
     """Executes a single declarative command line and safely re-binds the environment."""
     match stmt:
@@ -226,7 +224,6 @@ def eval_program(ast: list[Statement]) -> Environment:
     return env
 
 # == API SERIALIZATION HELPER == #
-
 def serialize_environment(env: Environment) -> dict:
     """Converts the active environment to the exact JSON schema the JS frontend expects."""
     complexes_json = {}
@@ -251,39 +248,3 @@ def serialize_environment(env: Environment) -> dict:
             }
             
     return {"success": True, "complexes": complexes_json}
-
-# == Test Verification Run == #
-if __name__ == "__main__":
-    sample_geometric_code = """
-    point p1 = (0.0, 0.0)
-    point p2 = (4.0, 0.0)
-    point p3 = (0.0, 3.0)
-    
-    complex triangle = [p1, p2, p3]
-    
-    complex shifted_triangle = translate(triangle, (10, -5))
-    complex scaled_triangle = scale(shifted_triangle, 2)
-    complex rotated_triangle = rotate(triangle, 90)
-    
-    moved_point = translate(p1, (1, 1))
-    
-    t_dim = dim(triangle)
-    t_verts = num_vert(triangle)
-    """
-
-    ast_tree = parse_ast(sample_geometric_code)
-    final_env = eval_program(ast_tree)
-
-    print("--- Geometric Verification Scope ---")
-    print("p1:", final_env.get("p1"))
-    print("moved_point:", final_env.get("moved_point"))
-    print("triangle dimension:", final_env.get("t_dim"))
-    print("triangle vertex count:", final_env.get("t_verts"))
-    print("\nRotated Triangle 0-Simplices (Vertices):")
-    for vertex in final_env.get("rotated_triangle").vertices:
-        print(f"  -> ({vertex.x}, {vertex.y})")
-        
-    # Test our new JSON Serialization!
-    print("\nJSON Output Test:")
-    import json
-    print(json.dumps(serialize_environment(final_env), indent=2))
