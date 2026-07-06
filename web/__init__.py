@@ -1,0 +1,1 @@
+#I made this file only to mark src/web as a package, in order to make the imports in server.py work correctly.

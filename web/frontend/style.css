@@ -1,0 +1,141 @@
+/* ---------- Base Layout ---------- */
+
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: sans-serif;
+}
+
+header {
+    background: #222;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+main {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 60px);
+}
+
+/* ---------- Buttons ---------- */
+
+button {
+    padding: 8px 14px;
+    font-size: 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* ---------- Editor / Output Panels ---------- */
+
+#editorContainer {
+    width: 60%;
+    height: 100%;
+    border-right: 2px solid #ccc;
+}
+
+#outputPanel {
+    color: #ccc;
+    width: 80%;
+    padding: 10px;
+    overflow-y: auto;
+    background: #f7f7f7;
+    border-top: 2px solid #ccc;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+#outputPanel h2 {
+    color: #222;
+    margin-top: 0;
+}
+
+#outputArea {
+    color: #ccc;
+    max-height: 95%;
+    padding: 10px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    background: #222222;
+    border-radius: 4px;
+}
+
+/* ---------- Output Cards ---------- */
+
+.output-card {
+    position: relative;  
+    color: #ccc;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.output-card-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.output-card-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #9cdcfe;
+    text-align: center;
+}
+
+/* ---------- Card Content ---------- */
+
+.output-card-info {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 8px;
+    line-height: 1.25;
+    flex: 1;
+}
+
+.output-card .row {
+    display: contents;
+}
+
+.output-card span {
+    margin: 0;
+    padding: 0;
+}
+
+/* ---------- Labels ---------- */
+
+.label,
+.output-card .label {
+    font-weight: 600;
+    white-space: nowrap;
+    color: #9cdcfe;
+}
+
+/* ---------- Render Button ---------- */
+
+button {
+    background-color: #9cdcfe;
+}
+
+.render-btn,
+.output-card button {
+    position: absolute;
+    top: 0;
+    right: 5px;
+    padding: 4px 10px;
+    font-size: 12px;    
+    white-space: nowrap;
+    border-style: none;
+}
+
+
+
