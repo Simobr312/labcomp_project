@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from typing import List, Union
 
 # Define operations explicitly
-defined_operations = {"translate", "rotate", "scale", "dim", "num_vert", "union"}
+defined_operations = {"translate", "rotate", "scale", "dim", "num_vert", "union", "boundary", "star"}
 op_regex = "|".join(defined_operations)
 
-# Parser grammar (Updated)
+# Parser grammar
 grammar = fr"""
     program: statement*
 
@@ -22,7 +22,7 @@ grammar = fr"""
         | IDENT
         | vertices_list
         | tuple_coord
-        | NUMBER              // <--- ADD THIS LINE HERE
+        | NUMBER 
         | "(" expr ")"
 
     op_call: OP "(" arg_list? ")"
@@ -43,9 +43,12 @@ grammar = fr"""
     %ignore WS
 """
 
-# == Abstract Syntax Tree (AST) Nodes == #
-
+# == Abstract Syntax Tree == #
 type Ref = str
+
+@dataclass
+class NumberLiteral:
+    value: float
 
 @dataclass
 class PointLiteral:
@@ -85,7 +88,6 @@ Statement = PointDecl | ComplexDecl | Assign
 Program = List[Statement]
 
 # == Tree Transformers == #
-
 def transform_expr_tree(tree) -> Expr:
     match tree:
         case Tree("tuple_coord", [Token("NUMBER", x), Token("NUMBER", y)]):
@@ -107,7 +109,7 @@ def transform_expr_tree(tree) -> Expr:
             return name
 
         case Token("NUMBER", value):
-            return PointLiteral(float(value), 0.0)  # Safe fallback for raw scalar args (e.g. scaling factor)
+            return NumberLiteral(float(value))
 
         case Tree("expr", [sub]):
             return transform_expr_tree(sub)

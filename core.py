@@ -5,7 +5,7 @@ from typing import Any, List, Dict, Callable, Tuple, Type, Set, FrozenSet, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
-from parser import parse_ast, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall
+from parser import NumberLiteral, parse_ast, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall
 
 # == Core Geometric Data Structures == #
 @dataclass(frozen=True)
@@ -27,7 +27,7 @@ class GeometricComplex:
 
 type EVal = Union[Point, GeometricComplex, int, float]
 type DVal = Union[EVal, Operator]
-type Environment = Dict[str, DVal]
+
 
 # == Environment Management == #
 def empty_environment() -> Environment:
@@ -80,9 +80,9 @@ def translate_impl(target: Union[Point, GeometricComplex], offset: Point) -> Uni
         return GeometricComplex(new_simplices)
     raise TypeError("translate target must be a Point or GeometricComplex")
 
-def scale_impl(target: Union[Point, GeometricComplex], factor: Union[int, float, Point]) -> Union[Point, GeometricComplex]:
-    s = float(factor.x if isinstance(factor, Point) else factor)
-    
+def scale_impl(target: Union[Point, GeometricComplex], factor: Union[int, float]) -> Union[Point, GeometricComplex]:
+    s = float(factor)
+
     if isinstance(target, Point):
         return Point(target.x * s, target.y * s)
     
@@ -117,6 +117,29 @@ def rotate_impl(target: Union[Point, GeometricComplex], angle: Union[int, float,
         return GeometricComplex(new_simplices)
     raise TypeError("rotate target must be a Point or GeometricComplex")
 
+
+## This operations here are not strictly mathematically corrent, the boundary operators
+## in algebraic topology usually return a chain complex, not a geometric complex. 
+##The star operator is also not a standard operation, in the sense that it returns a valid topological space,
+## but not really a geometric complex, because it's not closed under taking faces.
+def boundary_impl(c: GeometricComplex) -> GeometricComplex:
+    if not isinstance(c, GeometricComplex):
+        raise TypeError("boundary expects a GeometricComplex argument")
+    max_dim = dim_impl(c)
+    # Keep only simplices that are strictly smaller than the top dimension
+    b_simplices = {s for s in c.simplices if len(s) - 1 < max_dim}
+    return GeometricComplex(b_simplices)
+
+def star_impl(sub_c: GeometricComplex, entire_c: GeometricComplex) -> GeometricComplex:
+    """Returns all simplices in entire_c that contain any simplex of sub_c"""
+    star_simplices = set()
+    for s_entire in entire_c.simplices:
+        for s_sub in sub_c.simplices:
+            if s_sub.issubset(s_entire):
+                star_simplices.add(s_entire)
+                break
+    return GeometricComplex(star_simplices)
+
 def union_impl(c1: GeometricComplex, c2: GeometricComplex) -> GeometricComplex:
     if not isinstance(c1, GeometricComplex) or not isinstance(c2, GeometricComplex):
         raise TypeError("union expects two GeometricComplex arguments")
@@ -142,12 +165,13 @@ def initial_environment() -> Environment:
     env = bind(env, "scale", ConstructiveOperator("scale", scale_impl, (object, (int, float, Point)), object))
     env = bind(env, "rotate", ConstructiveOperator("rotate", rotate_impl, (object, (int, float, Point)), object))
     env = bind(env, "union", ConstructiveOperator("union", union_impl, (GeometricComplex, GeometricComplex), GeometricComplex))
+    env = bind(env, "boundary", ConstructiveOperator("boundary", boundary_impl, (GeometricComplex,), GeometricComplex))
+    env = bind(env, "star", ConstructiveOperator("star", star_impl, (GeometricComplex, GeometricComplex), GeometricComplex))
 
     # Observational Topologies
     env = bind(env, "dim", ObservationalOperator("dim", dim_impl, (GeometricComplex,), int))
     env = bind(env, "num_vert", ObservationalOperator("num_vert", num_vert_impl, (GeometricComplex,), int))
 
-    env = bind(env, "difference", ConstructiveOperator("difference", difference_impl, (GeometricComplex, GeometricComplex), GeometricComplex))
 
     return env
 
@@ -168,6 +192,9 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
     # Coordinate Tuples -> Point
     if isinstance(expr, PointLiteral):
         return Point(expr.x, expr.y)
+    
+    if isinstance(expr, NumberLiteral):
+        return expr.value
 
     # Complex Simplices Literal List -> GeometricComplex
     if isinstance(expr, ComplexLiteral):
@@ -223,7 +250,7 @@ def eval_program(ast: list[Statement]) -> Environment:
         env = execute_statement(stmt, env)
     return env
 
-# == API SERIALIZATION HELPER == #
+# == HELPER FUNCTION FOR FRONTEND == #
 def serialize_environment(env: Environment) -> dict:
     """Converts the active environment to the exact JSON schema the JS frontend expects."""
     complexes_json = {}
