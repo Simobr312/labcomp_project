@@ -4,6 +4,7 @@ import itertools
 from typing import Any, List, Dict, Callable, Tuple, Type, Set, FrozenSet, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+import json
 
 from parser import NumberLiteral, parse_ast, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall
 
@@ -275,3 +276,12 @@ def serialize_environment(env: Environment) -> dict:
             }
             
     return {"success": True, "complexes": complexes_json}
+
+def export_polylogica_json(env: Environment, filename: str = "polylogica_env.json"):
+    """Writes the geometric environment to a JSON file for PolyLogicA."""
+    json_data = serialize_environment(env)
+    
+    with open(filename, 'w') as f:
+        json.dump(json_data, f, indent=4)
+    
+    print(f"Successfully exported environment to {filename}")
