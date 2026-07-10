@@ -1,30 +1,98 @@
-let editor;
-
 window.require(["vs/editor/editor.main"], function () {
-    editor = monaco.editor.create(document.getElementById("editorContainer"), {
-        value: `// Define points in 2D space
-point p1 = (0.0, 0.0)
-point p2 = (4.0, 0.0)
-point p3 = (0.0, 3.0)
+    // 1. Create the data models (the "files")
+    const dslModel = monaco.editor.createModel(
+`// Define points in 2D space
+point p0 = (0, 0)
+point p1 = (10, 0)
+point p2 = (5, 10)
+point p3 = (15, 10)
+point p4 = (10, 20)
 
-// Create a shape
-complex triangle = [p1, p2, p3]
+// Complex 1: blue (Left Triangle)
+complex t1 = [p0, p1, p2]
 
-// Transform it
-complex moved = translate(triangle, (5, 2))
-complex scaled = scale(moved, 1.5)
-`,
-        language: "plaintext",
+// Complex 2: red (Middle Triangle, shares edge [p1, p2] with blue)
+complex t2 = [p1, p3, p2]
+
+// Complex 3: green (Top Triangle, shares edge [p2, p3] with red)
+complex t3 = [p2, p3, p4]
+`, 
+        "plaintext"
+    );
+
+    const imgqlModel = monaco.editor.createModel(
+    `// Write your PolyLogicA queries here
+// 2. Bind the atomic propositions to your JSON atoms
+let red = ap("t1")
+let green = ap("t2")
+let blue = ap("t3")
+
+// 3. Define the spatial logic formulas
+let nearBlue = N(blue)
+let orBlueRed = blue | red
+let andBlueRed = blue & red
+let gammaRedGreen = gamma(red, green)
+
+// Advanced test: find the exact vertex where all three regions meet
+let tripleIntersection = blue & red & green
+
+// 4. Save the results to disk
+save "eval_red" red
+save "eval_green" green
+save "eval_blue" blue
+save "eval_nearBlue" nearBlue
+save "eval_orBlueRed" orBlueRed
+save "eval_andBlueRed" andBlueRed
+save "eval_gammaRedGreen" gammaRedGreen
+save "eval_tripleIntersection" tripleIntersection
+`, 
+        "plaintext"
+    );
+
+    // 2. Initialize the single editor instance, starting with the DSL model
+    const editor = monaco.editor.create(document.getElementById("editorContainer"), {
+        model: dslModel,
         theme: "vs-dark",
         automaticLayout: true
     });
+
+    // 3. Attach Tab Switching Logic HERE (Guarantees editor is ready)
+    const tabDsl = document.getElementById("tabDsl");
+    const tabImgql = document.getElementById("tabImgql");
+
+    tabDsl.addEventListener("click", () => {
+        editor.setModel(dslModel);
+        tabDsl.classList.add("active");
+        tabImgql.classList.remove("active");
+        editor.focus(); // Snap focus back to the editor
+    });
+
+    tabImgql.addEventListener("click", () => {
+        editor.setModel(imgqlModel);
+        tabImgql.classList.add("active");
+        tabDsl.classList.remove("active");
+        editor.focus();
+    });
+
+    // 4. Expose functions to get values so the external buttons can read them safely
+    window.getDslCode = () => dslModel.getValue();
+    window.getImgqlCode = () => imgqlModel.getValue();
 });
 
+// ---------------------------------------------------------
+// Run DSL & Render
+// ---------------------------------------------------------
 document.getElementById("runBtn").addEventListener("click", async () => {
-    const code = editor.getValue();
-    const outputArea = document.getElementById("outputArea");
+    // Prevent running if Monaco hasn't loaded yet
+    if (typeof window.getDslCode !== "function") {
+        console.warn("Editor is still loading...");
+        return; 
+    }
 
-    outputArea.textContent = "Running...\n";
+    const code = window.getDslCode(); 
+    const runBtn = document.getElementById("runBtn");
+    const originalText = runBtn.textContent;
+    runBtn.textContent = "Rendering...";
 
     try {
         const response = await fetch("/run_program", {
@@ -36,51 +104,91 @@ document.getElementById("runBtn").addEventListener("click", async () => {
         const result = await response.json();
 
         if (!result.success) {
-            outputArea.innerHTML = `<div class="output-card"><h3>Error</h3><pre>${result.error}</pre></div>`;
+            alert("Error compiling DSL:\n" + result.error);
             return;
         }
 
-        outputArea.innerHTML = "";
+        if (window.renderEnvironment3D) {
+            window.renderEnvironment3D(result.complexes);
+        }
+    } catch (err) {
+        alert("Network/Parse Error: " + err.message);
+    } finally {
+        runBtn.textContent = originalText;
+    }
+});
+
+// ---------------------------------------------------------
+// Run PolyLogicA (.imgql) Checker
+// ---------------------------------------------------------
+// ---------------------------------------------------------
+// Run PolyLogicA (.imgql) Checker
+// ---------------------------------------------------------
+document.getElementById("runCheckerBtn").addEventListener("click", async () => {
+    // Prevent running if Monaco hasn't loaded yet
+    if (typeof window.getImgqlCode !== "function" || typeof window.getDslCode !== "function") {
+        console.warn("Editor is still loading...");
+        return; 
+    }
+
+    // Grab both contexts safely from the models
+    const queryCode = window.getImgqlCode();
+    const dslCode = window.getDslCode();
+    
+    const checkerOutputArea = document.getElementById("checkerOutputArea");
+    const runCheckerBtn = document.getElementById("runCheckerBtn");
+    const originalText = runCheckerBtn.textContent;
+    
+    runCheckerBtn.textContent = "Checking...";
+    checkerOutputArea.innerHTML = "<div class='output-card' style='color:#ccc;'>Running PolyLogicA...</div>";
+
+    try {
+        // FIXED: Pointing to the correct API endpoint route
+        const response = await fetch("/run_polylogica", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            // FIXED: Passing both payload requirements to server.py
+            body: JSON.stringify({ 
+                program: dslCode,
+                query: queryCode 
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            checkerOutputArea.innerHTML = `<div class="output-card"><h3 style="color: #ff5555; margin:0 0 10px 0;">Error</h3><pre style="margin:0;">${result.error}</pre></div>`;
+            return;
+        }
+
+        checkerOutputArea.innerHTML = "";
         
-        // Render each complex stored in the environment
-        for (const [name, complex] of Object.entries(result.complexes).reverse()) {
+        for (const [propName, values] of Object.entries(result.properties)) {
             const card = document.createElement("div");
             card.className = "output-card";
 
-            const title = document.createElement("div");
-            title.className = "output-card-title";
-            title.textContent = `Complex: ${name}`;
+            const title = document.createElement("h3");
+            title.style.margin = "0 0 10px 0";
+            title.textContent = `Property: ${propName}`;
 
-            const row = document.createElement("div");
-            row.className = "output-card-row";
+            const valuesDisplay = document.createElement("div");
+            valuesDisplay.textContent = `Result: ${values.join(", ")}`;
 
-            const cardInfo = document.createElement("div");
-            cardInfo.className = "output-card-info";
-
-            // Map coordinates for easy display
-            const coordStr = Object.entries(complex.coords)
-                .map(([v, pt]) => `${v}:(${pt[0]}, ${pt[1]})`).join(" | ");
-
-            cardInfo.innerHTML = `
-            <div class="row"><span class="label">Vertices</span><span>${Object.keys(complex.coords).join(", ")}</span></div>
-            <div class="row"><span class="label">Coords</span><span>${coordStr}</span></div>
-            <div class="row"><span class="label">Simplices</span><span>${complex.simplices.map(s => `[${s.join(",")}]`).join(" ")}</span></div>
-            `;
-
-            const renderBtn = document.createElement("button");
-            renderBtn.textContent = "Render";
-            renderBtn.className = "render-btn";
-            renderBtn.addEventListener("click", () => {
-                window.renderComplex3D(complex);
+            const drawBtn = document.createElement("button");
+            drawBtn.textContent = "Draw Result";
+            drawBtn.addEventListener("click", () => {
+                console.log(`Drawing result for ${propName}...`);
+                // window.drawCheckerResult(propName, values); 
             });
 
-            row.appendChild(cardInfo);
-            row.appendChild(renderBtn);
             card.appendChild(title);
-            card.appendChild(row);
-            outputArea.appendChild(card);
+            card.appendChild(valuesDisplay);
+            card.appendChild(drawBtn);
+            checkerOutputArea.appendChild(card);
         }
     } catch (err) {
-        outputArea.innerHTML = `<div class="output-card"><h3>Network/Parse Error</h3><pre>${err}</pre></div>`;
+        checkerOutputArea.innerHTML = `<div class="output-card"><h3 style="color: #ff5555; margin:0 0 10px 0;">Network/Parse Error</h3><pre style="margin:0;">${err.message}</pre></div>`;
+    } finally {
+        runCheckerBtn.textContent = originalText;
     }
 });

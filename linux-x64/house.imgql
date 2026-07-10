@@ -1,0 +1,21 @@
+// 1. Load the compiled mesh
+load mesh = "house.json"
+
+// 2. Bind the atomic propositions
+// Combine the individual houses into one generic 'house' group
+let house = ap("house1") | ap("house2") | ap("house3")
+let bridge = ap("bridge")
+
+// 3. Test Property A: Find only the houses that touch a bridge
+let connectedHouses = house & N(bridge)
+
+// 4. Test Property B: Find the isolated house
+let isolatedHouse = house & !(N(bridge))
+
+// 5. Test Property C: Reachability (The entire connected network)
+let connectedNetwork = gamma(house | bridge, bridge)
+
+// 6. Save the results to result.json for your visualizer
+save "draw_connected_houses" connectedHouses
+save "draw_isolated_house" isolatedHouse
+save "draw_network" connectedNetwork

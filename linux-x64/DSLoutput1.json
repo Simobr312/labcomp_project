@@ -1,0 +1,191 @@
+{
+    "numberOfPoints": 5,
+    "coordinatesOfPoints": [
+        [
+            5.0,
+            10.0,
+            0
+        ],
+        [
+            10.0,
+            0.0,
+            0
+        ],
+        [
+            0.0,
+            0.0,
+            0
+        ],
+        [
+            15.0,
+            10.0,
+            0
+        ],
+        [
+            10.0,
+            20.0,
+            0
+        ]
+    ],
+    "atomNames": [
+        "blue",
+        "red",
+        "green"
+    ],
+    "simplexes": [
+        {
+            "id": "t0",
+            "points": [
+                0,
+                1,
+                2
+            ],
+            "atoms": [
+                "blue"
+            ]
+        },
+        {
+            "id": "p1",
+            "points": [
+                2
+            ],
+            "atoms": [
+                "blue"
+            ]
+        },
+        {
+            "id": "l2",
+            "points": [
+                0,
+                1
+            ],
+            "atoms": [
+                "blue",
+                "red"
+            ]
+        },
+        {
+            "id": "l3",
+            "points": [
+                0,
+                2
+            ],
+            "atoms": [
+                "blue"
+            ]
+        },
+        {
+            "id": "p4",
+            "points": [
+                0
+            ],
+            "atoms": [
+                "blue",
+                "red",
+                "green"
+            ]
+        },
+        {
+            "id": "l5",
+            "points": [
+                1,
+                2
+            ],
+            "atoms": [
+                "blue"
+            ]
+        },
+        {
+            "id": "p6",
+            "points": [
+                1
+            ],
+            "atoms": [
+                "blue",
+                "red"
+            ]
+        },
+        {
+            "id": "t7",
+            "points": [
+                0,
+                1,
+                3
+            ],
+            "atoms": [
+                "red"
+            ]
+        },
+        {
+            "id": "p8",
+            "points": [
+                3
+            ],
+            "atoms": [
+                "red",
+                "green"
+            ]
+        },
+        {
+            "id": "l9",
+            "points": [
+                0,
+                3
+            ],
+            "atoms": [
+                "red",
+                "green"
+            ]
+        },
+        {
+            "id": "l10",
+            "points": [
+                1,
+                3
+            ],
+            "atoms": [
+                "red"
+            ]
+        },
+        {
+            "id": "l11",
+            "points": [
+                0,
+                4
+            ],
+            "atoms": [
+                "green"
+            ]
+        },
+        {
+            "id": "p12",
+            "points": [
+                4
+            ],
+            "atoms": [
+                "green"
+            ]
+        },
+        {
+            "id": "l13",
+            "points": [
+                3,
+                4
+            ],
+            "atoms": [
+                "green"
+            ]
+        },
+        {
+            "id": "t14",
+            "points": [
+                0,
+                3,
+                4
+            ],
+            "atoms": [
+                "green"
+            ]
+        }
+    ]
+}

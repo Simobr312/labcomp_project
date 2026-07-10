@@ -30,9 +30,9 @@ function makeTextSprite(message, parameters = {}) {
 }
 
 // -----------------------------------------------------------
-// Render geometric complex in 3D (Flat 2D Plane)
+// Render ALL geometric complexes in the environment
 // -----------------------------------------------------------
-function renderComplex3D(complex) {
+function renderEnvironment3D(complexes) {
     const canvas = document.getElementById("visualizationCanvas");
 
     if (window.THREE_RENDERER) {
@@ -55,20 +55,15 @@ function renderComplex3D(complex) {
     light.position.set(0, 0, 10);
     scene.add(light);
 
-    // -----------------------------------------------------------
-    // REFERENCE FRAMEWORK (Origin, Grid & Axes)
-    // -----------------------------------------------------------
-    
-    // 1. Coordinate Grid (Size 200, 200 subdivisions)
-    // By default, GridHelper is on the XZ plane. We rotate it to the XY plane.
+    // 1. Coordinate Grid
     const gridHelper = new THREE.GridHelper(200, 200, 0x999999, 0xd0d0d0);
     gridHelper.rotation.x = Math.PI / 2; 
-    gridHelper.position.z = -0.01; // Push slightly back to prevent z-fighting with shapes
+    gridHelper.position.z = -0.01; 
     scene.add(gridHelper);
 
-    // 2. Axis Lines (Red = X-axis, Green = Y-axis)
+    // 2. Axis Lines
     const axesHelper = new THREE.AxesHelper(100);
-    axesHelper.position.z = -0.005; // Slightly above grid, below geometry
+    axesHelper.position.z = -0.005; 
     scene.add(axesHelper);
 
     // 3. Focal Origin Point (0, 0)
@@ -83,12 +78,23 @@ function renderComplex3D(complex) {
     scene.add(originLabel);
 
     // -----------------------------------------------------------
-    // Parse incoming data
+    // Parse incoming data from the entire environment
     // -----------------------------------------------------------
-    const coords = complex.coords; 
-    const simplices = complex.simplices; 
+    const globalCoords = {};
+    const globalSimplices = [];
 
-    // Include (0,0) in initial bounding calculation so origin framework stays visible
+    // Aggregate all points and simplices from every complex in the environment
+    for (const complex of Object.values(complexes)) {
+        // Collect coordinates (avoids drawing duplicates if names match)
+        for (const [vName, pt] of Object.entries(complex.coords)) {
+            globalCoords[vName] = pt;
+        }
+        // Collect all simplices
+        if (complex.simplices) {
+            globalSimplices.push(...complex.simplices);
+        }
+    }
+
     let minX = 0, maxX = 0, minY = 0, maxY = 0;
 
     // Materials
@@ -96,9 +102,10 @@ function renderComplex3D(complex) {
     const faceMat = new THREE.MeshBasicMaterial({ color: 0x007aff, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
 
     // Draw Simplices
-    for (const simplex of simplices) {
+    for (const simplex of globalSimplices) {
+        // Map vertex names to their global coordinates
         const pts = simplex.map(vName => {
-            const [x, y] = coords[vName];
+            const [x, y] = globalCoords[vName];
             
             if (x < minX) minX = x; if (x > maxX) maxX = x;
             if (y < minY) minY = y; if (y > maxY) maxY = y;
@@ -120,26 +127,25 @@ function renderComplex3D(complex) {
     }
 
     // Draw 0-Simplices (Vertices) & Labels
-    for (const [vName, [x, y]] of Object.entries(coords)) {
+    for (const [vName, [x, y]] of Object.entries(globalCoords)) {
         const sphereGeo = new THREE.SphereGeometry(0.12, 16, 16);
-        const mat = new THREE.MeshBasicMaterial({ color: 0xff3b30 }); // Vibrant red for active nodes
+        const mat = new THREE.MeshBasicMaterial({ color: 0xff3b30 }); 
         const sphere = new THREE.Mesh(sphereGeo, mat);
         sphere.position.set(x, y, 0);
         scene.add(sphere);
 
-        // Append coordinates to the node label to read values dynamically
         const labelText = `${vName} (${x.toFixed(1)}, ${y.toFixed(1)})`;
         const labelSprite = makeTextSprite(labelText, { fontSize: 18, color: '#1c1c1e' });
         labelSprite.position.set(x, y + 0.3, 0); 
         scene.add(labelSprite);
     }
 
-    // Center camera on a bounding area encompassing BOTH the origin and the geometry
+    // Center camera on a bounding area encompassing the global geometry
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
     const width = Math.max(maxX - minX, maxY - minY, 8);
     
-    camera.position.set(cx, cy, width * 1.3); // Dynamic Z distance based on data scope
+    camera.position.set(cx, cy, width * 1.3); 
     camera.lookAt(cx, cy, 0);
     controls.target.set(cx, cy, 0);
 
@@ -160,4 +166,4 @@ function renderComplex3D(complex) {
     animate();
 }
 
-window.renderComplex3D = renderComplex3D;
+window.renderEnvironment3D = renderEnvironment3D;

@@ -1,0 +1,27 @@
+// 1. Load your topological poset model
+// (Change "dsl1.json" if your file has a different name)
+load mesh = "dsl1.json"
+
+// 2. Bind the atomic propositions to your JSON atoms
+let red = ap("red")
+let green = ap("green")
+let blue = ap("blue")
+
+// 3. Define the spatial logic formulas
+let nearBlue = N(blue)
+let orBlueRed = blue | red
+let andBlueRed = blue & red
+let gammaRedGreen = gamma(red, green)
+
+// Advanced test: find the exact vertex where all three regions meet
+let tripleIntersection = blue & red & green
+
+// 4. Save the results to disk
+save "eval_red" red
+save "eval_green" green
+save "eval_blue" blue
+save "eval_nearBlue" nearBlue
+save "eval_orBlueRed" orBlueRed
+save "eval_andBlueRed" andBlueRed
+save "eval_gammaRedGreen" gammaRedGreen
+save "eval_tripleIntersection" tripleIntersection

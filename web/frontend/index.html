@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>2D Geometric DSL Editor</title>
+    <title>2D Geometric DSL & Model Checker Editor</title>
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
@@ -19,26 +19,70 @@
         }
     }
     </script>
+    <style>
+        /* Baseline styles for flexbox layout */
+        body { margin: 0; display: flex; flex-direction: column; height: 100vh; font-family: sans-serif; background: #1e1e1e; }
+        header { padding: 10px 20px; background: #333; color: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; }
+        header h1 { margin: 0; font-size: 1.2rem; }
+        main { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Panel headers and Tabs */
+        .panel-header { padding: 5px 10px; background: #252526; color: #ccc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e1e1e; }
+        .panel-header button.action-btn { padding: 5px 15px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 3px; font-weight: bold; }
+        .panel-header button.action-btn:hover { background: #005f9e; }
+
+        /* Tab Styles */
+        .tab-container { display: flex; gap: 2px; }
+        .tab-btn { padding: 8px 15px; cursor: pointer; background: #2d2d2d; color: #888; border: none; outline: none; border-radius: 4px 4px 0 0; }
+        .tab-btn.active { background: #1e1e1e; color: #fff; }
+        .tab-btn:hover:not(.active) { background: #333; color: #ccc; }
+
+        /* Output Cards */
+        .output-card { border: 1px solid #444; background: #2d2d30; padding: 10px; margin-bottom: 10px; border-radius: 4px; color: #eee; }
+        .output-card button { margin-top: 10px; padding: 5px 10px; cursor: pointer; background: #444; color: white; border: 1px solid #555; border-radius: 3px; }
+        .output-card button:hover { background: #555; }
+    </style>
 </head>
 
 <body>
 <header>
-    <h1>Geometric Simplicial DSL</h1>
-    <button id="runBtn">Run Code</button>
+    <h1>Geometric Simplicial DSL & PolyLogicA</h1>
 </header>
 
 <main>
-    <div id="editorContainer" style="height:100%; width:60%;"></div>
+    <div id="leftPanel" style="display: flex; flex-direction: column; width: 50%; height: 100%; border-right: 1px solid #000;">
+        
+        <div class="panel-header" style="padding-bottom: 0;">
+            <div class="tab-container">
+                <button id="tabDsl" class="tab-btn active">main.geo</button>
+                <button id="tabImgql" class="tab-btn">query.imgql</button>
+            </div>
+        </div>
+        
+        <div id="editorContainer" style="flex: 1; width: 100%;"></div>
 
-    <div id="rightPanel" style="display: flex; flex-direction: column; width: 40%; height: 100%;">
-        <div id="visWrapper" style="position: relative; width: 100%; height: 60%;">
-            <canvas id="visualizationCanvas" style="width: 100%; height: 100%;"></canvas>
+    </div>
+
+    <div id="rightPanel" style="display: flex; flex-direction: column; width: 50%; height: 100%;">
+        
+        <div class="panel-header">
+            <span>Visualization</span>
+            <button id="runBtn" class="action-btn">Render DSL</button> 
+        </div>
+        <div id="visWrapper" style="position: relative; width: 100%; height: 60%; border-bottom: 1px solid #000;">
+            <canvas id="visualizationCanvas" style="width: 100%; height: 100%; background: #000;"></canvas>
         </div>
 
-        <div id="outputPanel" style="width: 100%; height: 40%; overflow-y: auto;"> 
-            <h2>Output Environment</h2>
-            <div id="outputArea"></div>
+        <div class="panel-header">
+            <span>Model Checker Results</span>
+            <button id="runCheckerBtn" class="action-btn">Check Properties</button>
         </div>
+        <div id="checkerOutputPanel" style="flex: 1; overflow-y: auto; background: #1e1e1e; padding: 15px; box-sizing: border-box;"> 
+            <div id="checkerOutputArea" style="color: #888; font-style: italic;">
+                Run PolyLogicA to see results...
+            </div>
+        </div>
+
     </div>
 </main>
 

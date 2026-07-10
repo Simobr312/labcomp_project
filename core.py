@@ -258,14 +258,14 @@ def serialize_environment(env: Environment) -> dict:
     
     for name, val in env.items():
         if isinstance(val, GeometricComplex):
-            # 1. Map python Point objects to unique string identifiers (v0, v1, etc.)
+            # Map python Point objects to unique string identifiers (v0, v1, etc.)
             verts = list(val.vertices)
             pt_to_id = {pt: f"v{i}" for i, pt in enumerate(verts)}
             
-            # 2. Extract coordinates
+            # Extract coordinates
             coords_dict = {pt_to_id[pt]: [pt.x, pt.y] for pt in verts}
             
-            # 3. Map frozen sets back to arrays of strings for JSON
+            # Map frozen sets back to arrays of strings for JSON
             simplices_list = []
             for simplex in val.simplices:
                 simplices_list.append([pt_to_id[pt] for pt in simplex])
@@ -277,11 +277,60 @@ def serialize_environment(env: Environment) -> dict:
             
     return {"success": True, "complexes": complexes_json}
 
-def export_polylogica_json(env: Environment, filename: str = "polylogica_env.json"):
-    """Writes the geometric environment to a JSON file for PolyLogicA."""
-    json_data = serialize_environment(env)
+
+
+def serialize_polylogica_poset(env) -> dict:
+    """Converts the active environment to PolyLogicA's Poset JSON schema."""
     
+    # 1. Gather all simplices and their atoms, computing the downward closure.
+    # Maps a simplex (frozenset of points) to a set of atom names.
+    simplex_atoms: Dict[FrozenSet, Set[str]] = {}
+
+    for name, value in env.items():
+        # Assuming your AST object is named GeometricComplex and has a .simplices property
+        if hasattr(value, 'simplices'): 
+            for max_simplex in value.simplices:
+                pts = list(max_simplex)
+                
+                # Downward closure: generate all sub-combinations (vertices, edges, faces, etc.)
+                for r in range(1, len(pts) + 1):
+                    for sub_combo in itertools.combinations(pts, r):
+                        sub_simp = frozenset(sub_combo)
+                        if sub_simp not in simplex_atoms:
+                            simplex_atoms[sub_simp] = set()
+                        simplex_atoms[sub_simp].add(name)
+
+    # 2. Sort by dimension (length of the frozenset) so vertices get the lowest IDs
+    sorted_simplices = sorted(list(simplex_atoms.keys()), key=lambda s: len(s))
+    
+    # Assign a unique string ID to each simplex
+    simplex_to_id = {simp: str(idx) for idx, simp in enumerate(sorted_simplices)}
+    
+    # 3. Build the Hasse Diagram (Poset)
+    poset_points = []
+    
+    for simp in sorted_simplices:
+        simp_id = simplex_to_id[simp]
+        atoms = list(simplex_atoms[simp])
+        
+        # Find all simplices that immediately cover `simp` 
+        # (Must be exactly 1 dimension higher, and contain all points of `simp`)
+        up_list = []
+        for other_simp in sorted_simplices:
+            if len(other_simp) == len(simp) + 1 and simp.issubset(other_simp):
+                up_list.append(simplex_to_id[other_simp])
+        
+        poset_points.append({
+            "id": simp_id,
+            "atoms": atoms,
+            "up": up_list
+        })
+        
+    return { "points": poset_points }
+
+def export_polylogica_json(env, filename: str = "dsl1.json") -> None:
+    """Writes the geometric environment to PolyLogicA poset format."""
+    json_data = serialize_polylogica_poset(env)
     with open(filename, 'w') as f:
         json.dump(json_data, f, indent=4)
-    
-    print(f"Successfully exported environment to {filename}")
+    print(f"Successfully exported PolyLogicA Poset environment to {filename}")

@@ -1,11 +1,12 @@
 /* ---------- Base Layout ---------- */
-
 body {
     margin: 0;
     height: 100vh;
     display: flex;
     flex-direction: column;
     font-family: sans-serif;
+    background: #1e1e1e; /* Dark theme background */
+    color: #ccc;
 }
 
 header {
@@ -15,67 +16,127 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    border-bottom: 1px solid #000;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.2rem;
 }
 
 main {
     display: flex;
     flex: 1;
-    height: calc(100vh - 60px);
+    overflow: hidden; /* Prevents whole page scrolling */
+}
+
+/* ---------- Split Panels ---------- */
+#leftPanel {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    height: 100%;
+    border-right: 1px solid #000;
+}
+
+#rightPanel {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    height: 100%;
+}
+
+/* ---------- Panel Headers & Tabs ---------- */
+.panel-header {
+    padding: 5px 10px;
+    background: #252526;
+    color: #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1e1e1e;
+    min-height: 32px;
+}
+
+.tab-container {
+    display: flex;
+    gap: 2px;
+    margin-bottom: -5px; /* Pulls tabs down flush with the border */
+}
+
+.tab-btn {
+    padding: 8px 15px;
+    cursor: pointer;
+    background: #2d2d2d;
+    color: #888;
+    border: none;
+    outline: none;
+    border-radius: 4px 4px 0 0;
+    font-size: 13px;
+    font-weight: normal;
+}
+
+.tab-btn.active {
+    background: #1e1e1e;
+    color: #fff;
+}
+
+.tab-btn:hover:not(.active) {
+    background: #333;
+    color: #ccc;
+}
+
+/* ---------- Editor / Output Areas ---------- */
+#editorContainer {
+    flex: 1;
+    width: 100%;
+}
+
+#visWrapper {
+    position: relative;
+    width: 100%;
+    height: 60%;
+    border-bottom: 1px solid #000;
+}
+
+#checkerOutputPanel {
+    flex: 1;
+    overflow-y: auto;
+    background: #1e1e1e;
+    padding: 15px;
+    box-sizing: border-box;
 }
 
 /* ---------- Buttons ---------- */
-
 button {
     padding: 8px 14px;
-    font-size: 15px;
+    font-size: 14px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-weight: 600;
 }
 
-/* ---------- Editor / Output Panels ---------- */
-
-#editorContainer {
-    width: 60%;
-    height: 100%;
-    border-right: 2px solid #ccc;
+.action-btn {
+    background-color: #007acc;
+    color: white;
+    padding: 5px 15px;
 }
 
-#outputPanel {
-    color: #ccc;
-    width: 80%;
-    padding: 10px;
-    overflow-y: auto;
-    background: #f7f7f7;
-    border-top: 2px solid #ccc;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-}
-
-#outputPanel h2 {
-    color: #222;
-    margin-top: 0;
-}
-
-#outputArea {
-    color: #ccc;
-    max-height: 95%;
-    padding: 10px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    background: #222222;
-    border-radius: 4px;
+.action-btn:hover {
+    background-color: #005f9e;
 }
 
 /* ---------- Output Cards ---------- */
-
 .output-card {
     position: relative;  
+    background: #2d2d30;
     color: #ccc;
-    padding: 6px 8px;
-    margin-bottom: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
     border-radius: 6px;
     font-size: 13px;
+    border: 1px solid #444;
 }
 
 .output-card-row {
@@ -87,18 +148,16 @@ button {
 .output-card-title {
     font-weight: 700;
     font-size: 14px;
-    margin-bottom: 6px;
-    color: #9cdcfe;
-    text-align: center;
+    margin-bottom: 8px;
+    color: #9cdcfe; /* VS Code variable color */
 }
 
 /* ---------- Card Content ---------- */
-
 .output-card-info {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 2px 8px;
-    line-height: 1.25;
+    gap: 4px 8px;
+    line-height: 1.4;
     flex: 1;
 }
 
@@ -112,7 +171,6 @@ button {
 }
 
 /* ---------- Labels ---------- */
-
 .label,
 .output-card .label {
     font-weight: 600;
@@ -120,22 +178,27 @@ button {
     color: #9cdcfe;
 }
 
-/* ---------- Render Button ---------- */
+/* ---------- Card / Render Buttons ---------- */
+.output-card button {
+    background-color: #444;
+    color: #fff;
+    border: 1px solid #555;
+    margin-top: 10px;
+    font-weight: normal;
+}
 
-button {
-    background-color: #9cdcfe;
+.output-card button:hover {
+    background-color: #555;
 }
 
 .render-btn,
-.output-card button {
+.output-card button.abs-btn {
     position: absolute;
-    top: 0;
-    right: 5px;
+    top: 8px;
+    right: 8px;
     padding: 4px 10px;
     font-size: 12px;    
     white-space: nowrap;
     border-style: none;
+    margin-top: 0;
 }
-
-
-

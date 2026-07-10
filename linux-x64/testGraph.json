@@ -1,0 +1,53 @@
+{
+    "numberOfPoints": 7,
+    "coordinatesOfPoints": [
+        [ 0,10, 0],
+        [ 0, 0, 0],
+        [10, 0, 0],
+        [10,10, 0],
+        [20,10, 0],
+        [20, 0, 0],
+        [30, 0, 0]
+    ],
+    "atomNames": [
+        "p",
+        "q"
+    ],
+    "simplexes": [
+        {
+            "id": "p0",
+            "points": [0],
+            "atoms": []
+        },
+        {
+            "id": "p1",
+            "points": [1],
+            "atoms": ["q"]
+        },
+        {
+            "id": "p2",
+            "points": [2],
+            "atoms": []
+        },
+        {
+            "id": "l1",
+            "points": [0,1],
+            "atoms": []
+        },
+        {
+            "id": "l2",
+            "points": [1,2],
+            "atoms": []
+        },
+        {
+            "id": "l3",
+            "points": [2,0],
+            "atoms": []
+        },
+        {
+            "id": "T1",
+            "points": [0,1,2],
+            "atoms": ["p"]
+        }
+    ]
+  }

@@ -1,0 +1,30 @@
+// 1. Load the model
+load mesh = "dsl1.json"
+
+// 2. Bind the atoms
+let red = ap("red")
+let green = ap("green")
+let blue = ap("blue")
+
+// DRAWING 1: The Topological Boundary of the Red Triangle
+// This finds elements touching both the red region and the non-red regions
+let redBoundary = N(red) & N(!red)
+
+// DRAWING 2: The Purely Blue "Interior"
+// Added explicit parentheses around the neighborhood negations
+let pureBlue = blue & !(N(red)) & !(N(green))
+
+// DRAWING 3: The Topological Bridge (Blue to Green)
+let bridgeBlueToGreen = gamma(blue, green)
+
+// DRAWING 4: The Entire Outer Rim
+let outerRim = !(blue & red & green)
+
+let intersection = blue & red & green
+
+// 3. Save the new drawings
+save "draw_redBoundary" redBoundary
+save "draw_pureBlue" pureBlue
+save "draw_bridgeBlueToGreen" bridgeBlueToGreen
+save "draw_outerRim" outerRim
+save "draw_intersection" intersection
