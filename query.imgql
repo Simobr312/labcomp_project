@@ -1,25 +1,25 @@
 load mesh = "temp_mesh.json"
 // Write your PolyLogicA queries here
 // 2. Bind the atomic propositions to your JSON atoms
-let red = ap("t1")
-let green = ap("t2")
-let blue = ap("t3")
+let t1 = ap("t1")
+let t2 = ap("t2")
+let t3 = ap("t3")
 
 // 3. Define the spatial logic formulas
-let nearBlue = N(blue)
-let orBlueRed = blue | red
-let andBlueRed = blue & red
-let gammaRedGreen = gamma(red, green)
+let neart1 = N(t1)
+let orT1T2 = t1 | t2
+let andT1T2 = t1 & t2
+let gammaT2T3 = gamma(t2, t3)
 
 // Advanced test: find the exact vertex where all three regions meet
-let tripleIntersection = blue & red & green
+let tripleIntersection = t1 & t2 & t3
 
 // 4. Save the results to disk
-save "eval_red" red
-save "eval_green" green
-save "eval_blue" blue
-save "eval_nearBlue" nearBlue
-save "eval_orBlueRed" orBlueRed
-save "eval_andBlueRed" andBlueRed
-save "eval_gammaRedGreen" gammaRedGreen
+save "eval_t2" t2
+save "eval_t3" t3
+save "eval_t1" t1
+save "eval_neart1" neart1
+save "eval_orT1T2" orT1T2
+save "eval_andT1T2" andT1T2
+save "eval_gammaT2T3" gammaT2T3
 save "eval_tripleIntersection" tripleIntersection

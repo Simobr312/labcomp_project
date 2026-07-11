@@ -13,10 +13,12 @@ grammar = fr"""
     ?statement: point_decl
               | complex_decl
               | assign
+              | render_stmt
 
     point_decl: "point" IDENT "=" tuple_coord
     complex_decl: "complex" IDENT "=" expr
     assign: IDENT "=" expr
+    render_stmt: "render" IDENT
 
     ?expr: op_call
         | IDENT
@@ -57,7 +59,7 @@ class PointLiteral:
 
 @dataclass
 class ComplexLiteral:
-    vertices: List[Ref]  # List of point identifiers making up the complex
+    vertices: List[Ref]  
 
 @dataclass
 class OpCall:
@@ -67,7 +69,6 @@ class OpCall:
 Expr = Ref | PointLiteral | ComplexLiteral | OpCall
 
 # == Statements == #
-
 @dataclass
 class PointDecl:
     name: str
@@ -84,7 +85,11 @@ class Assign:
     name: str
     expr: Expr
 
-Statement = PointDecl | ComplexDecl | Assign
+@dataclass
+class RenderStmt:
+    name: str
+
+Statement = PointDecl | ComplexDecl | Assign | RenderStmt
 Program = List[Statement]
 
 # == Tree Transformers == #
@@ -94,9 +99,7 @@ def transform_expr_tree(tree) -> Expr:
             return PointLiteral(float(x), float(y))
 
         case Tree("vertices_list", [id_list]):
-            return ComplexLiteral(
-                [tok.value for tok in id_list.children]
-            )
+            return ComplexLiteral([tok.value for tok in id_list.children])
 
         case Tree("op_call", [Token("OP", op), arg_list]):
             args = [transform_expr_tree(a) for a in arg_list.children]
@@ -129,14 +132,13 @@ def transform_statement_tree(tree) -> Statement:
         case Tree("assign", [Token("IDENT", name), expr]):
             return Assign(name, transform_expr_tree(expr))
 
+        case Tree("render_stmt", [Token("IDENT", name)]):
+            return RenderStmt(name)
+
         case _:
             raise ValueError(f"Unexpected statement tree: {tree}")
-
 
 def parse_ast(source_code: str) -> Program:
     parser = Lark(grammar, start="program")
     tree = parser.parse(source_code)
-    return [
-        transform_statement_tree(stmt)
-        for stmt in tree.children
-    ]
+    return [transform_statement_tree(stmt) for stmt in tree.children]

@@ -29,6 +29,18 @@ function makeTextSprite(message, parameters = {}) {
     return sprite;
 }
 
+// Helper to generate distinct distinct colors for multiple complexes
+function getComplexColor(index) {
+    const colors = [
+        0x007aff, // iOS Blue
+        0x34c759, // iOS Green
+        0xaf52de, // Purple
+        0xff9500, // Orange
+        0x5856d6, // Indigo
+        0xff2d55  // Pink
+    ];
+    return colors[index % colors.length];
+}
 // -----------------------------------------------------------
 // Render ALL geometric complexes in the environment
 // -----------------------------------------------------------
@@ -40,16 +52,16 @@ function renderEnvironment3D(complexes) {
     }
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     window.THREE_RENDERER = renderer;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f7); // Clean, neutral light background
+    scene.background = new THREE.Color(0xf5f5f7); 
 
     const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.01, 1000);
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableRotate = false; // Keep fixed to strict 2D panning/zooming
+    controls.enableRotate = false; // Fixed 2D panning/zooming
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(0, 0, 10);
@@ -68,7 +80,7 @@ function renderEnvironment3D(complexes) {
 
     // 3. Focal Origin Point (0, 0)
     const originGeo = new THREE.SphereGeometry(0.15, 32, 32);
-    const originMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
+    const originMat = new THREE.MeshBasicMaterial({ trasparent: true, color: 0x333333 });
     const originSphere = new THREE.Mesh(originGeo, originMat);
     originSphere.position.set(0, 0, 0);
     scene.add(originSphere);
@@ -77,70 +89,102 @@ function renderEnvironment3D(complexes) {
     originLabel.position.set(0.4, -0.4, 0);
     scene.add(originLabel);
 
-    // -----------------------------------------------------------
-    // Parse incoming data from the entire environment
-    // -----------------------------------------------------------
-    const globalCoords = {};
-    const globalSimplices = [];
-
-    // Aggregate all points and simplices from every complex in the environment
-    for (const complex of Object.values(complexes)) {
-        // Collect coordinates (avoids drawing duplicates if names match)
-        for (const [vName, pt] of Object.entries(complex.coords)) {
-            globalCoords[vName] = pt;
-        }
-        // Collect all simplices
-        if (complex.simplices) {
-            globalSimplices.push(...complex.simplices);
-        }
-    }
+    // Reset tracking maps
+    window.VISUALIZER_MESHES = {}; 
 
     let minX = 0, maxX = 0, minY = 0, maxY = 0;
+    let complexIndex = 0;
 
-    // Materials
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 2 });
-    const faceMat = new THREE.MeshBasicMaterial({ color: 0x007aff, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+    // Loop through every complex in the environment map
+    for (const [complexName, complex] of Object.entries(complexes)) {
+        const baseColor = getComplexColor(complexIndex);
+        complexIndex++;
 
-    // Draw Simplices
-    for (const simplex of globalSimplices) {
-        // Map vertex names to their global coordinates
-        const pts = simplex.map(vName => {
-            const [x, y] = globalCoords[vName];
-            
+        const localCoords = {};
+        
+        // 1. Parse coordinates safely (handles both old array format and new object format)
+        for (const [vName, data] of Object.entries(complex.coords)) {
+            let x, y, id;
+
+            if (Array.isArray(data)) {
+                [x, y] = data;
+                id = `fallback_${complexName}_${vName}`;
+            } else {
+                [x, y] = data.coords;
+                id = data.id;
+            }
+
+            localCoords[vName] = new THREE.Vector3(x, y, 0);
+
             if (x < minX) minX = x; if (x > maxX) maxX = x;
             if (y < minY) minY = y; if (y > maxY) maxY = y;
-            
-            return new THREE.Vector3(x, y, 0);
-        });
 
-        if (pts.length === 2) {
-            // Draw 1-Simplex (Edge)
-            const geo = new THREE.BufferGeometry().setFromPoints(pts);
-            scene.add(new THREE.Line(geo, lineMat));
-        } else if (pts.length === 3) {
-            // Draw 2-Simplex (Face)
-            const geo = new THREE.BufferGeometry().setFromPoints(pts);
-            geo.setIndex([0, 1, 2]);
-            geo.computeVertexNormals();
-            scene.add(new THREE.Mesh(geo, faceMat));
+            // Render Vertex Sphere
+            const sphereGeo = new THREE.SphereGeometry(0.12, 16, 16);
+            // Defaulting vertices to a clean gray color so property tests show up vibrant
+            const mat = new THREE.MeshBasicMaterial({ color: 0x8e8e93 }); 
+            const sphere = new THREE.Mesh(sphereGeo, mat);
+            sphere.position.copy(localCoords[vName]);
+            scene.add(sphere);
+
+            // Bind the sphere mesh to the official PolyLogicA Poset ID
+            window.VISUALIZER_MESHES[id] = sphere;
+
+            const labelText = `${complexName}:${vName}`;
+            const labelSprite = makeTextSprite(labelText, { fontSize: 16, color: '#1c1c1e' });
+            labelSprite.position.set(x, y + 0.3, 0); 
+            scene.add(labelSprite);
+        }
+
+        // Materials setup per complex scope boundaries
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 2 });
+        const faceMat = new THREE.MeshBasicMaterial({ color: baseColor, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+
+        // 2. Render Simplices (Edges and Faces)
+        if (complex.simplices) {
+            for (const simplex of complex.simplices) {
+                // Compatibility layer for structured objects vs old raw arrays
+                const vertexNames = Array.isArray(simplex) ? simplex : simplex.vertices;
+                const pts = vertexNames.map(vName => localCoords[vName]);
+                const simplexId = Array.isArray(simplex) ? `fallback_sim_${complexName}` : simplex.id;
+
+                if (pts.length === 3) {
+                    // Draw Face Mesh
+                    if (!window.VISUALIZER_MESHES[simplexId]) {
+                        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                        geo.setIndex([0, 1, 2]);
+                        geo.computeVertexNormals();
+                        const mesh = new THREE.Mesh(geo, faceMat.clone()); // Cloned to isolate highlights
+                        scene.add(mesh);
+                        window.VISUALIZER_MESHES[simplexId] = mesh;
+                    }
+
+                    // Draw sub-edges if they exist on the structured simplex object
+                    if (simplex.edges) {
+                        simplex.edges.forEach(edge => {
+                            if (!window.VISUALIZER_MESHES[edge.id]) {
+                                const edgePts = edge.vertices.map(vName => localCoords[vName]);
+                                const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePts);
+                                const line = new THREE.Line(edgeGeo, lineMat.clone());
+                                scene.add(line);
+                                window.VISUALIZER_MESHES[edge.id] = line;
+                            }
+                        });
+                    }
+                } else if (pts.length === 2) {
+                    // Draw Standard Line Edge
+                    if (!window.VISUALIZER_MESHES[simplexId]) {
+                        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                        const line = new THREE.Line(geo, lineMat.clone());
+                        scene.add(line);
+                        window.VISUALIZER_MESHES[simplexId] = line;
+                    }
+                }
+            }
         }
     }
 
-    // Draw 0-Simplices (Vertices) & Labels
-    for (const [vName, [x, y]] of Object.entries(globalCoords)) {
-        const sphereGeo = new THREE.SphereGeometry(0.12, 16, 16);
-        const mat = new THREE.MeshBasicMaterial({ color: 0xff3b30 }); 
-        const sphere = new THREE.Mesh(sphereGeo, mat);
-        sphere.position.set(x, y, 0);
-        scene.add(sphere);
-
-        const labelText = `${vName} (${x.toFixed(1)}, ${y.toFixed(1)})`;
-        const labelSprite = makeTextSprite(labelText, { fontSize: 18, color: '#1c1c1e' });
-        labelSprite.position.set(x, y + 0.3, 0); 
-        scene.add(labelSprite);
-    }
-
-    // Center camera on a bounding area encompassing the global geometry
+    // Dynamic zoom calculations
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
     const width = Math.max(maxX - minX, maxY - minY, 8);
@@ -151,10 +195,12 @@ function renderEnvironment3D(complexes) {
 
     function resizeRenderer() {
         const wrapper = document.getElementById("visWrapper");
+        if (!wrapper) return;
         renderer.setSize(wrapper.clientWidth, wrapper.clientHeight, false);
         camera.aspect = wrapper.clientWidth / wrapper.clientHeight;
         camera.updateProjectionMatrix();
     }
+    
     resizeRenderer();
     window.addEventListener("resize", resizeRenderer);
 
@@ -167,3 +213,34 @@ function renderEnvironment3D(complexes) {
 }
 
 window.renderEnvironment3D = renderEnvironment3D;
+
+/**
+ * Colors the existing Three.js scene elements based on the PolyLogicA output matrix array index matches
+ */
+window.drawCheckerResult = function(propName, values) {
+    if (!window.VISUALIZER_MESHES || Object.keys(window.VISUALIZER_MESHES).length === 0) {
+        console.warn("No active tracked elements found to color.");
+        return;
+    }
+
+    console.log(`Applying logic checker visual highlights for property: ${propName}`);
+
+    // Loop through the boolean evaluation sequence matching PolyLogicA's dimension-sorted indices
+    values.forEach((hasProperty, idx) => {
+        const id = idx.toString();
+        const mesh = window.VISUALIZER_MESHES[id];
+
+        if (mesh && mesh.material) {
+            if (hasProperty) {
+                mesh.material.color.setHex(0x34c759); // Green
+                if (mesh.type === "Mesh") mesh.material.opacity = 0.8;
+            } else {
+                mesh.material.color.setHex(0xff3b30); // Red
+                if (mesh.type === "Mesh") mesh.material.opacity = 0.2;
+            }
+            mesh.material.needsUpdate = true;
+        }
+    });
+};
+
+window.drawCheckerResult = drawCheckerResult;

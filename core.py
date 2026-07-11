@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import json
 
-from parser import NumberLiteral, parse_ast, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall
+from parser import NumberLiteral, parse_ast, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall, RenderStmt
 
 # == Core Geometric Data Structures == #
 @dataclass(frozen=True)
@@ -241,10 +241,16 @@ def execute_statement(stmt: Statement, env: Environment) -> Environment:
             val = evaluate_expr(expr, env)
             return bind(env, name, val)
 
+        case RenderStmt(name):
+            if name not in env:
+                raise KeyError(f"Render target '{name}' is not defined in the current environment.")
+            render_targets = env.get("__render_targets__", set())
+            render_targets.add(name)
+            return bind(env, "__render_targets__", render_targets)
+
         case _:
             raise ValueError(f"Statement configuration '{type(stmt)}' is currently unrecognized.")
-
-
+        
 def eval_program(ast: list[Statement]) -> Environment:
     env = initial_environment()
     for stmt in ast:
@@ -252,23 +258,69 @@ def eval_program(ast: list[Statement]) -> Environment:
     return env
 
 # == HELPER FUNCTION FOR FRONTEND == #
-def serialize_environment(env: Environment) -> dict:
-    """Converts the active environment to the exact JSON schema the JS frontend expects."""
-    complexes_json = {}
+def serialize_environment(env) -> dict:
+    """Converts the active environment to JSON, respecting explicit render primitives."""
+    render_targets = env.get("__render_targets__", None)
     
+    # 1. Recreate the downward closure to map exact PolyLogicA IDs
+    simplex_atoms = {}
+    for name, value in env.items():
+        if name == "__render_targets__":
+            continue
+        # Skip this object if render markers are defined and this object isn't marked
+        if render_targets is not None and name not in render_targets:
+            continue
+            
+        if hasattr(value, 'simplices'): 
+            for max_simplex in value.simplices:
+                pts = list(max_simplex)
+                for r in range(1, len(pts) + 1):
+                    for sub_combo in itertools.combinations(pts, r):
+                        sub_simp = frozenset(sub_combo)
+                        if sub_simp not in simplex_atoms:
+                            simplex_atoms[sub_simp] = set()
+                        simplex_atoms[sub_simp].add(name)
+
+    sorted_simplices = sorted(list(simplex_atoms.keys()), key=lambda s: len(s))
+    simplex_to_id = {simp: str(idx) for idx, simp in enumerate(sorted_simplices)}
+
+    # 2. Build the payload, attaching the official IDs
+    complexes_json = {}
     for name, val in env.items():
-        if isinstance(val, GeometricComplex):
-            # Map python Point objects to unique string identifiers (v0, v1, etc.)
+        if name == "__render_targets__":
+            continue
+        if render_targets is not None and name not in render_targets:
+            continue
+            
+        if hasattr(val, 'simplices'):
             verts = list(val.vertices)
             pt_to_id = {pt: f"v{i}" for i, pt in enumerate(verts)}
             
-            # Extract coordinates
-            coords_dict = {pt_to_id[pt]: [pt.x, pt.y] for pt in verts}
+            coords_dict = {
+                pt_to_id[pt]: {
+                    "coords": [pt.x, pt.y],
+                    "id": simplex_to_id[frozenset([pt])]
+                } 
+                for pt in verts
+            }
             
-            # Map frozen sets back to arrays of strings for JSON
             simplices_list = []
-            for simplex in val.simplices:
-                simplices_list.append([pt_to_id[pt] for pt in simplex])
+            for max_simplex in val.simplices:
+                pts = list(max_simplex)
+                simplex_data = {
+                    "vertices": [pt_to_id[p] for p in pts],
+                    "id": simplex_to_id[frozenset(pts)],
+                    "edges": []
+                }
+                
+                if len(pts) == 3:
+                    for combo in itertools.combinations(pts, 2):
+                        simplex_data["edges"].append({
+                            "vertices": [pt_to_id[p] for p in combo],
+                            "id": simplex_to_id[frozenset(combo)]
+                        })
+                        
+                simplices_list.append(simplex_data)
                 
             complexes_json[name] = {
                 "coords": coords_dict,
@@ -276,8 +328,6 @@ def serialize_environment(env: Environment) -> dict:
             }
             
     return {"success": True, "complexes": complexes_json}
-
-
 
 def serialize_polylogica_poset(env) -> dict:
     """Converts the active environment to PolyLogicA's Poset JSON schema."""

@@ -23,27 +23,27 @@ complex t3 = [p2, p3, p4]
     const imgqlModel = monaco.editor.createModel(
     `// Write your PolyLogicA queries here
 // 2. Bind the atomic propositions to your JSON atoms
-let red = ap("t1")
-let green = ap("t2")
-let blue = ap("t3")
+let t1 = ap("t1")
+let t2 = ap("t2")
+let t3 = ap("t3")
 
 // 3. Define the spatial logic formulas
-let nearBlue = N(blue)
-let orBlueRed = blue | red
-let andBlueRed = blue & red
-let gammaRedGreen = gamma(red, green)
+let neart1 = N(t1)
+let orT1T2 = t1 | t2
+let andT1T2 = t1 & t2
+let gammaT2T3 = gamma(t2, t3)
 
 // Advanced test: find the exact vertex where all three regions meet
-let tripleIntersection = blue & red & green
+let tripleIntersection = t1 & t2 & t3
 
 // 4. Save the results to disk
-save "eval_red" red
-save "eval_green" green
-save "eval_blue" blue
-save "eval_nearBlue" nearBlue
-save "eval_orBlueRed" orBlueRed
-save "eval_andBlueRed" andBlueRed
-save "eval_gammaRedGreen" gammaRedGreen
+save "eval_t2" t2
+save "eval_t3" t3
+save "eval_t1" t1
+save "eval_neart1" neart1
+save "eval_orT1T2" orT1T2
+save "eval_andT1T2" andT1T2
+save "eval_gammaT2T3" gammaT2T3
 save "eval_tripleIntersection" tripleIntersection
 `, 
         "plaintext"
@@ -121,9 +121,6 @@ document.getElementById("runBtn").addEventListener("click", async () => {
 // ---------------------------------------------------------
 // Run PolyLogicA (.imgql) Checker
 // ---------------------------------------------------------
-// ---------------------------------------------------------
-// Run PolyLogicA (.imgql) Checker
-// ---------------------------------------------------------
 document.getElementById("runCheckerBtn").addEventListener("click", async () => {
     // Prevent running if Monaco hasn't loaded yet
     if (typeof window.getImgqlCode !== "function" || typeof window.getDslCode !== "function") {
@@ -178,7 +175,7 @@ document.getElementById("runCheckerBtn").addEventListener("click", async () => {
             drawBtn.textContent = "Draw Result";
             drawBtn.addEventListener("click", () => {
                 console.log(`Drawing result for ${propName}...`);
-                // window.drawCheckerResult(propName, values); 
+                window.drawCheckerResult(propName, values); 
             });
 
             card.appendChild(title);
