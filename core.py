@@ -29,7 +29,6 @@ class GeometricComplex:
 type EVal = Union[Point, GeometricComplex, int, float]
 type DVal = Union[EVal, Operator]
 
-
 # == Environment Management == #
 def empty_environment() -> Environment:
     return {}
