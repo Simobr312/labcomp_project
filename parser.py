@@ -139,6 +139,6 @@ def transform_statement_tree(tree) -> Statement:
             raise ValueError(f"Unexpected statement tree: {tree}")
 
 def parse_ast(source_code: str) -> Program:
-    parser = Lark(grammar, start="program")
+    parser = Lark(grammar, start="program", parser="lalr")
     tree = parser.parse(source_code)
     return [transform_statement_tree(stmt) for stmt in tree.children]

@@ -4,9 +4,8 @@ import itertools
 from typing import Any, List, Dict, Callable, Tuple, Type, Set, FrozenSet, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-import json
 
-from parser import NumberLiteral, parse_ast, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall, RenderStmt
+from parser import NumberLiteral, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall, RenderStmt
 
 # == Core Geometric Data Structures == #
 @dataclass(frozen=True)
@@ -15,7 +14,7 @@ class Point:
     y: float
 
 @dataclass
-class GeometricComplex:
+class Complex:
     simplices: Set[FrozenSet[Point]]
 
     @property
@@ -26,19 +25,26 @@ class GeometricComplex:
             verts.update(simplex)
         return verts
 
-type EVal = Union[Point, GeometricComplex, int, float]
-type DVal = Union[EVal, Operator]
+type Geometric = Point | Complex
+type Num = int | float
+type EVal = Geometric | Num
+type DVal = EVal | Operator
+
+type Environment = Dict[str, DVal]
 
 # == Environment Management == #
 def empty_environment() -> Environment:
+    """Creates a fresh environment with no bindings."""
     return {}
 
 def bind(env: Environment, name: str, value: DVal) -> Environment:
+    """Returns a new environment with the given name bound to the value."""
     new_env = env.copy()
     new_env[name] = value
     return new_env
 
 def lookup(env: Environment, name: str) -> DVal:
+    """Looks up the value of a name in the environment."""
     if name in env:
         return env[name]
     raise KeyError(f"Identifier '{name}' not found in environment")
@@ -46,6 +52,7 @@ def lookup(env: Environment, name: str) -> DVal:
 # == Operator Definitions == #
 @dataclass(frozen=True)
 class Operator(ABC):
+    """Abstract base class for all operators in the DSL."""
     name: str
     fn: Callable
     arg_types: Tuple[Union[Type, Tuple[Type, ...]], ...]
@@ -56,45 +63,50 @@ class Operator(ABC):
         pass
 
 class ConstructiveOperator(Operator):
-    def apply(self, args: List[Any]) -> Union[Point, GeometricComplex]:
+    """Operator that constructs new geometric entities from existing ones."""
+    def apply(self, args: List[Any]) -> Union[Point, Complex]:
         if len(args) != len(self.arg_types):
             raise ValueError(f"Operator '{self.name}' expects {len(self.arg_types)} arguments, got {len(args)}")
         return self.fn(*args)
 
 class ObservationalOperator(Operator):
+    """Operator that observes properties of geometric entities without modifying them."""
     def apply(self, args: List[Any]) -> int:
         if len(args) != len(self.arg_types):
             raise ValueError(f"Operator '{self.name}' expects {len(self.arg_types)} arguments, got {len(args)}")
         return self.fn(*args)
 
 # == Primitive Geometric Implementations == #
-def translate_impl(target: Union[Point, GeometricComplex], offset: Point) -> Union[Point, GeometricComplex]:
+def translate_impl(target: Geometric, offset: Point) -> Geometric:
+    """ Translates a geometric entity (Point or Complex) by a given offset Point."""
     if isinstance(target, Point):
         return Point(target.x + offset.x, target.y + offset.y)
     
-    elif isinstance(target, GeometricComplex):
+    elif isinstance(target, Complex):
         new_simplices = set()
         for simplex in target.simplices:
             new_simplex = frozenset(Point(p.x + offset.x, p.y + offset.y) for p in simplex)
             new_simplices.add(new_simplex)
-        return GeometricComplex(new_simplices)
-    raise TypeError("translate target must be a Point or GeometricComplex")
+        return Complex(new_simplices)
+    raise TypeError("translate target must be a Point or Complex")
 
-def scale_impl(target: Union[Point, GeometricComplex], factor: Union[int, float]) -> Union[Point, GeometricComplex]:
+def scale_impl(target: Geometric, factor: Union[int, float]) -> Union[Point, Complex]:
+    """ Scales a geometric entity (Point or Complex) by a given numeric factor. """
     s = float(factor)
 
     if isinstance(target, Point):
         return Point(target.x * s, target.y * s)
     
-    elif isinstance(target, GeometricComplex):
+    elif isinstance(target, Complex):
         new_simplices = set()
         for simplex in target.simplices:
             new_simplex = frozenset(Point(p.x * s, p.y * s) for p in simplex)
             new_simplices.add(new_simplex)
-        return GeometricComplex(new_simplices)
-    raise TypeError("scale target must be a Point or GeometricComplex")
+        return Complex(new_simplices)
+    raise TypeError("scale target must be a Point or Complex")
 
-def rotate_impl(target: Union[Point, GeometricComplex], angle: Union[int, float, Point]) -> Union[Point, GeometricComplex]:
+def rotate_impl(target: Geometric, angle: Num | Point) -> Geometric:
+    """ Rotates a geometric entity (Point or Complex) around the origin by a given angle in degrees. """
     deg = float(angle.x if isinstance(angle, Point) else angle)
     rad = math.radians(deg)
     cos_a = math.cos(rad)
@@ -109,28 +121,28 @@ def rotate_impl(target: Union[Point, GeometricComplex], angle: Union[int, float,
     if isinstance(target, Point):
         return rot_pt(target)
     
-    elif isinstance(target, GeometricComplex):
+    elif isinstance(target, Complex):
         new_simplices = set()
         for simplex in target.simplices:
             new_simplex = frozenset(rot_pt(p) for p in simplex)
             new_simplices.add(new_simplex)
-        return GeometricComplex(new_simplices)
-    raise TypeError("rotate target must be a Point or GeometricComplex")
+        return Complex(new_simplices)
+    raise TypeError("rotate target must be a Point or Complex")
 
 
-## This operations here are not strictly mathematically corrent, the boundary operators
+## This operations here are not strictly mathematically coherent, the boundary operators
 ## in algebraic topology usually return a chain complex, not a geometric complex. 
 ##The star operator is also not a standard operation, in the sense that it returns a valid topological space,
 ## but not really a geometric complex, because it's not closed under taking faces.
-def boundary_impl(c: GeometricComplex) -> GeometricComplex:
-    if not isinstance(c, GeometricComplex):
-        raise TypeError("boundary expects a GeometricComplex argument")
+def boundary_impl(c: Complex) -> Complex:
+    if not isinstance(c, Complex):
+        raise TypeError("boundary expects a Complex argument")
     max_dim = dim_impl(c)
     # Keep only simplices that are strictly smaller than the top dimension
     b_simplices = {s for s in c.simplices if len(s) - 1 < max_dim}
-    return GeometricComplex(b_simplices)
+    return Complex(b_simplices)
 
-def star_impl(sub_c: GeometricComplex, entire_c: GeometricComplex) -> GeometricComplex:
+def star_impl(sub_c: Complex, entire_c: Complex) -> Complex:
     """Returns all simplices in entire_c that contain any simplex of sub_c"""
     star_simplices = set()
     for s_entire in entire_c.simplices:
@@ -138,46 +150,49 @@ def star_impl(sub_c: GeometricComplex, entire_c: GeometricComplex) -> GeometricC
             if s_sub.issubset(s_entire):
                 star_simplices.add(s_entire)
                 break
-    return GeometricComplex(star_simplices)
+    return Complex(star_simplices)
 
-def union_impl(c1: GeometricComplex, c2: GeometricComplex) -> GeometricComplex:
-    if not isinstance(c1, GeometricComplex) or not isinstance(c2, GeometricComplex):
-        raise TypeError("union expects two GeometricComplex arguments")
-    return GeometricComplex(c1.simplices | c2.simplices)
+def union_impl(c1: Complex, c2: Complex) -> Complex:
+    """Returns the union of two complexes, combining their simplices."""
+    if not isinstance(c1, Complex) or not isinstance(c2, Complex):
+        raise TypeError("union expects two Complex arguments")
+    return Complex(c1.simplices | c2.simplices)
 
-def dim_impl(c: GeometricComplex) -> int:
-    if not isinstance(c, GeometricComplex):
-        raise TypeError("dim expects a GeometricComplex argument")
+def dim_impl(c: Complex) -> int:
+    """Returns the topological dimension of the complex, which is the maximum dimension of its simplices."""
+    if not isinstance(c, Complex):
+        raise TypeError("dim expects a Complex argument")
     if not c.simplices:
         return -1
     return max(len(simplex) - 1 for simplex in c.simplices)
 
-def num_vert_impl(c: GeometricComplex) -> int:
-    if not isinstance(c, GeometricComplex):
-        raise TypeError("num_vert expects a GeometricComplex argument")
+def num_vert_impl(c: Complex) -> int:
+    """Returns the number of unique vertices in the complex."""
+    if not isinstance(c, Complex):
+        raise TypeError("num_vert expects a Complex argument")
     return len(c.vertices)
 
 def initial_environment() -> Environment:
     env = empty_environment()
 
-    # Constructive Transforms
+    # Constructive Operations
     env = bind(env, "translate", ConstructiveOperator("translate", translate_impl, (object, Point), object))
     env = bind(env, "scale", ConstructiveOperator("scale", scale_impl, (object, (int, float, Point)), object))
     env = bind(env, "rotate", ConstructiveOperator("rotate", rotate_impl, (object, (int, float, Point)), object))
-    env = bind(env, "union", ConstructiveOperator("union", union_impl, (GeometricComplex, GeometricComplex), GeometricComplex))
-    env = bind(env, "boundary", ConstructiveOperator("boundary", boundary_impl, (GeometricComplex,), GeometricComplex))
-    env = bind(env, "star", ConstructiveOperator("star", star_impl, (GeometricComplex, GeometricComplex), GeometricComplex))
+    env = bind(env, "union", ConstructiveOperator("union", union_impl, (Complex, Complex), Complex))
+    env = bind(env, "boundary", ConstructiveOperator("boundary", boundary_impl, (Complex,), Complex))
+    env = bind(env, "star", ConstructiveOperator("star", star_impl, (Complex, Complex), Complex))
 
-    # Observational Topologies
-    env = bind(env, "dim", ObservationalOperator("dim", dim_impl, (GeometricComplex,), int))
-    env = bind(env, "num_vert", ObservationalOperator("num_vert", num_vert_impl, (GeometricComplex,), int))
+    # Observational Operations
+    env = bind(env, "dim", ObservationalOperator("dim", dim_impl, (Complex,), int))
+    env = bind(env, "num_vert", ObservationalOperator("num_vert", num_vert_impl, (Complex,), int))
 
 
     return env
 
 # == EVALUATION ENGINE == #
 def evaluate_expr(expr: Expr, env: Environment) -> EVal:
-    """Evaluates geometric expressions down to raw runtime mathematical values."""
+    """Evaluates the expression within the given environment."""
     
     # Primitive Numbers
     if isinstance(expr, (int, float)):
@@ -196,7 +211,7 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
     if isinstance(expr, NumberLiteral):
         return expr.value
 
-    # Complex Simplices Literal List -> GeometricComplex
+    # Complex Simplices Literal List -> Complex
     if isinstance(expr, ComplexLiteral):
         points = []
         for v_name in expr.vertices:
@@ -205,13 +220,13 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
                 raise TypeError(f"Identifier '{v_name}' inside simplex list must evaluate to a Point.")
             points.append(pt)
         
-        # Generate downward closure topology (every subset face of the simplex)
+        # Generate every subset face of the simplex
         simplices_set = set()
         for r in range(1, len(points) + 1):
             for combo in itertools.combinations(points, r):
                 simplices_set.add(frozenset(combo))
                 
-        return GeometricComplex(simplices_set)
+        return Complex(simplices_set)
 
     # Operator Execution Matrix
     if isinstance(expr, OpCall):
@@ -225,15 +240,15 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
     raise TypeError(f"Unknown geometric expression node type: {type(expr)}")
 
 def execute_statement(stmt: Statement, env: Environment) -> Environment:
-    """Executes a single declarative command line and safely re-binds the environment."""
+    """Executes a single declarative command line and rebinds the environment."""
     match stmt:
         case PointDecl(name, x, y):
             return bind(env, name, Point(x, y))
 
         case ComplexDecl(name, expr):
             val = evaluate_expr(expr, env)
-            if not isinstance(val, GeometricComplex):
-                raise TypeError(f"Expression for complex declaration '{name}' must evaluate to a GeometricComplex.")
+            if not isinstance(val, Complex):
+                raise TypeError(f"Expression for complex declaration '{name}' must evaluate to a Complex.")
             return bind(env, name, val)
 
         case Assign(name, expr):
@@ -251,135 +266,9 @@ def execute_statement(stmt: Statement, env: Environment) -> Environment:
             raise ValueError(f"Statement configuration '{type(stmt)}' is currently unrecognized.")
         
 def eval_program(ast: list[Statement]) -> Environment:
+    """Evaluates a full program represented as an AST, returning the final environment."""
     env = initial_environment()
     for stmt in ast:
         env = execute_statement(stmt, env)
     return env
 
-# == HELPER FUNCTION FOR FRONTEND == #
-def serialize_environment(env) -> dict:
-    """Converts the active environment to JSON, respecting explicit render primitives."""
-    render_targets = env.get("__render_targets__", None)
-    
-    # 1. Recreate the downward closure to map exact PolyLogicA IDs
-    simplex_atoms = {}
-    for name, value in env.items():
-        if name == "__render_targets__":
-            continue
-        # Skip this object if render markers are defined and this object isn't marked
-        if render_targets is not None and name not in render_targets:
-            continue
-            
-        if hasattr(value, 'simplices'): 
-            for max_simplex in value.simplices:
-                pts = list(max_simplex)
-                for r in range(1, len(pts) + 1):
-                    for sub_combo in itertools.combinations(pts, r):
-                        sub_simp = frozenset(sub_combo)
-                        if sub_simp not in simplex_atoms:
-                            simplex_atoms[sub_simp] = set()
-                        simplex_atoms[sub_simp].add(name)
-
-    sorted_simplices = sorted(list(simplex_atoms.keys()), key=lambda s: len(s))
-    simplex_to_id = {simp: str(idx) for idx, simp in enumerate(sorted_simplices)}
-
-    # 2. Build the payload, attaching the official IDs
-    complexes_json = {}
-    for name, val in env.items():
-        if name == "__render_targets__":
-            continue
-        if render_targets is not None and name not in render_targets:
-            continue
-            
-        if hasattr(val, 'simplices'):
-            verts = list(val.vertices)
-            pt_to_id = {pt: f"v{i}" for i, pt in enumerate(verts)}
-            
-            coords_dict = {
-                pt_to_id[pt]: {
-                    "coords": [pt.x, pt.y],
-                    "id": simplex_to_id[frozenset([pt])]
-                } 
-                for pt in verts
-            }
-            
-            simplices_list = []
-            for max_simplex in val.simplices:
-                pts = list(max_simplex)
-                simplex_data = {
-                    "vertices": [pt_to_id[p] for p in pts],
-                    "id": simplex_to_id[frozenset(pts)],
-                    "edges": []
-                }
-                
-                if len(pts) == 3:
-                    for combo in itertools.combinations(pts, 2):
-                        simplex_data["edges"].append({
-                            "vertices": [pt_to_id[p] for p in combo],
-                            "id": simplex_to_id[frozenset(combo)]
-                        })
-                        
-                simplices_list.append(simplex_data)
-                
-            complexes_json[name] = {
-                "coords": coords_dict,
-                "simplices": simplices_list
-            }
-            
-    return {"success": True, "complexes": complexes_json}
-
-def serialize_polylogica_poset(env) -> dict:
-    """Converts the active environment to PolyLogicA's Poset JSON schema."""
-    
-    # 1. Gather all simplices and their atoms, computing the downward closure.
-    # Maps a simplex (frozenset of points) to a set of atom names.
-    simplex_atoms: Dict[FrozenSet, Set[str]] = {}
-
-    for name, value in env.items():
-        # Assuming your AST object is named GeometricComplex and has a .simplices property
-        if hasattr(value, 'simplices'): 
-            for max_simplex in value.simplices:
-                pts = list(max_simplex)
-                
-                # Downward closure: generate all sub-combinations (vertices, edges, faces, etc.)
-                for r in range(1, len(pts) + 1):
-                    for sub_combo in itertools.combinations(pts, r):
-                        sub_simp = frozenset(sub_combo)
-                        if sub_simp not in simplex_atoms:
-                            simplex_atoms[sub_simp] = set()
-                        simplex_atoms[sub_simp].add(name)
-
-    # 2. Sort by dimension (length of the frozenset) so vertices get the lowest IDs
-    sorted_simplices = sorted(list(simplex_atoms.keys()), key=lambda s: len(s))
-    
-    # Assign a unique string ID to each simplex
-    simplex_to_id = {simp: str(idx) for idx, simp in enumerate(sorted_simplices)}
-    
-    # 3. Build the Hasse Diagram (Poset)
-    poset_points = []
-    
-    for simp in sorted_simplices:
-        simp_id = simplex_to_id[simp]
-        atoms = list(simplex_atoms[simp])
-        
-        # Find all simplices that immediately cover `simp` 
-        # (Must be exactly 1 dimension higher, and contain all points of `simp`)
-        up_list = []
-        for other_simp in sorted_simplices:
-            if len(other_simp) == len(simp) + 1 and simp.issubset(other_simp):
-                up_list.append(simplex_to_id[other_simp])
-        
-        poset_points.append({
-            "id": simp_id,
-            "atoms": atoms,
-            "up": up_list
-        })
-        
-    return { "points": poset_points }
-
-def export_polylogica_json(env, filename: str = "dsl1.json") -> None:
-    """Writes the geometric environment to PolyLogicA poset format."""
-    json_data = serialize_polylogica_poset(env)
-    with open(filename, 'w') as f:
-        json.dump(json_data, f, indent=4)
-    print(f"Successfully exported PolyLogicA Poset environment to {filename}")
