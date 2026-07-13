@@ -36,11 +36,15 @@ def _build_downward_closure(complexes: ComplexEnv) -> tuple[list[frozenset], dic
 
 def serialize_environment(env: ComplexEnv) -> dict[str, Any]:
     """Converts the active environment to JSON, respecting explicit render primitives."""
-    complexes = _extract_complexes(env, filter_targets=True)
-    _, simplex_to_id, _ = _build_downward_closure(complexes)
+    # 1. Generate IDs using the ENTIRE environment so they match PolyLogicA's Poset exactly
+    global_complexes = _extract_complexes(env, filter_targets=False)
+    _, simplex_to_id, _ = _build_downward_closure(global_complexes)
+    
+    # 2. Filter down to only the complexes explicitly marked for rendering
+    render_complexes = _extract_complexes(env, filter_targets=True)
     
     complexes_json = {}
-    for name, val in complexes.items():
+    for name, val in render_complexes.items():
         verts = list(val.vertices)
         pt_to_id = {pt: f"v{i}" for i, pt in enumerate(verts)}
         
@@ -79,7 +83,6 @@ def serialize_environment(env: ComplexEnv) -> dict[str, Any]:
         }
         
     return {"success": True, "complexes": complexes_json}
-
 
 def serialize_polylogica_poset(env: ComplexEnv) -> dict[str, Any]:
     """Converts the active environment to PolyLogicA's Poset JSON schema."""
