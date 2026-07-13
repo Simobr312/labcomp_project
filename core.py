@@ -5,7 +5,7 @@ from typing import Any, List, Dict, Callable, Tuple, Type, Set, FrozenSet, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
-from parser import NumberLiteral, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall, RenderStmt
+from parser import NumberLiteral, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall, RenderStmt, FunctionDecl, ReturnStmt, FuncCall
 
 # == Core Geometric Data Structures == #
 @dataclass(frozen=True)
@@ -25,10 +25,19 @@ class Complex:
             verts.update(simplex)
         return verts
 
+@dataclass
+class Closure:
+    function: FunctionDecl
+    env: Environment
+
+class ReturnException(Exception):
+    def __init__(self, value: EVal):
+        self.value = value
+
 type Geometric = Point | Complex
 type Num = int | float
-type EVal = Geometric | Num
-type DVal = EVal | Operator
+type EVal = Geometric | Num | Closure | None
+type DVal = EVal | Operator | Closure
 
 type Environment = Dict[str, DVal]
 
@@ -206,7 +215,11 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
 
     # Coordinate Tuples -> Point
     if isinstance(expr, PointLiteral):
-        return Point(expr.x, expr.y)
+        x_val = evaluate_expr(expr.x, env)
+        y_val = evaluate_expr(expr.y, env)
+        if not isinstance(x_val, (int, float)) or not isinstance(y_val, (int, float)):
+            raise TypeError("Point coordinates must evaluate to numeric values.")
+        return Point(float(x_val), float(y_val))
     
     if isinstance(expr, NumberLiteral):
         return expr.value
@@ -237,13 +250,38 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
         arg_vals = [evaluate_expr(arg, env) for arg in expr.args]
         return op.apply(arg_vals)
 
+    if isinstance(expr, FuncCall):
+        closure = lookup(env, expr.name)
+        if not isinstance(closure, Closure):
+            raise ValueError(f"'{expr.name}' is not a callable function.")
+            
+        arg_vals = [evaluate_expr(arg, env) for arg in expr.args]
+        if len(arg_vals) != len(closure.function.params):
+            raise ValueError(f"Function '{expr.name}' expects {len(closure.function.params)} arguments, got {len(arg_vals)}")
+            
+        local_env = closure.env
+        local_env = bind(local_env, expr.name, closure)
+        for param, val in zip(closure.function.params, arg_vals):
+            local_env = bind(local_env, param, val)
+            
+        try:
+            for body_stmt in closure.function.body:
+                local_env = execute_statement(body_stmt, local_env)
+            return None
+        except ReturnException as e:
+            return e.value
+
     raise TypeError(f"Unknown geometric expression node type: {type(expr)}")
 
 def execute_statement(stmt: Statement, env: Environment) -> Environment:
     """Executes a single declarative command line and rebinds the environment."""
     match stmt:
         case PointDecl(name, x, y):
-            return bind(env, name, Point(x, y))
+            x_val = evaluate_expr(x, env)
+            y_val = evaluate_expr(y, env)
+            if not isinstance(x_val, (int, float)) or not isinstance(y_val, (int, float)):
+                raise TypeError("Point coordinates must evaluate to numeric values.")
+            return bind(env, name, Point(float(x_val), float(y_val)))
 
         case ComplexDecl(name, expr):
             val = evaluate_expr(expr, env)
@@ -262,6 +300,14 @@ def execute_statement(stmt: Statement, env: Environment) -> Environment:
             render_targets.add(name)
             return bind(env, "__render_targets__", render_targets)
 
+        case FunctionDecl(name, params, body):
+            closure = Closure(stmt, env)
+            return bind(env, name, closure)
+
+        case ReturnStmt(expr):
+            val = evaluate_expr(expr, env)
+            raise ReturnException(val)
+
         case _:
             raise ValueError(f"Statement configuration '{type(stmt)}' is currently unrecognized.")
         
@@ -271,4 +317,3 @@ def eval_program(ast: list[Statement]) -> Environment:
     for stmt in ast:
         env = execute_statement(stmt, env)
     return env
-

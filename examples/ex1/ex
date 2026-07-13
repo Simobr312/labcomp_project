@@ -1,0 +1,30 @@
+Example 1
+
+point p1 = (0, 0)
+point p2 = (4, 0)
+point p3 = (2, 4)
+complex base_triangle = [p1, p2, p3]
+
+complex right_triangle = translate(base_triangle, (4, 0))
+
+complex total_mesh = union(base_triangle, right_triangle)
+
+render right_triangle
+render total_mesh
+
+let t1 = ap("base_triangle")
+let t2 = ap("right_triangle")
+let total = ap("total_mesh")
+
+let sharedinterface = N(t1) & N(t2)
+
+let externalboundary = total & N(!total)
+
+let internalsharedpoints = sharedinterface & !externalboundary
+
+save "interface" sharedinterface
+save "outer_rim" externalboundary
+save "internal_touch" 
+
+# aggiungere le funzioni,
+# fare una funzione house di esempio con posizione e orientazioni
