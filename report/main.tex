@@ -19,6 +19,7 @@
 \newtheorem{theorem}{Theorem}
 \newtheorem{definition}{Definition}
 \newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
 
 % --- Custom Code Style ---
 \lstset{
@@ -31,7 +32,13 @@
     stringstyle=\color{purple}
 }
 
-% --- Metadata ---
+% --- Macros ---
+\newcommand{\R}{\mathbb{R}}
+
+\newcommand{\commentforimage}[1]{\text{\color{red} [Image Placeholder]: #1}}
+
+
+
 \title{A Domain-Specific Language and Web Interface for Geometric Simplicial Complexes in PolyLogicA}
 \author{Simone Riccio}
 \date{\today}
@@ -45,48 +52,135 @@
 \end{abstract}
 
 \section{Introduction}
-    Spatial logic provides a robust mathematical framework for reasoning about the properties of space, topological relations, and geometric configurations \cite{spatial-logic}. Within the context of the VoxLogicA project—and specifically its PolyLogicA branch—evaluating these spatial properties requires translating geometric constructs into formal topological structures, typically represented as partially ordered sets (posets).
-    
-    Constructing these posets manually is highly error-prone and unintuitive. To bridge this gap, this project introduces a custom Domain-Specific Language (DSL) that allows users to express complex geometric structures using simple Euclidean points and high-level operations (e.g., union, star, boundary). We implemented a Python-based interpreter that parses this DSL, evaluates the geometric expressions, computes the strict downward topological closures, and automatically serializes the data into PolyLogicA's expected JSON format. Furthermore, we provide a web interface leveraging Uvicorn and Three.js to offer real-time visual feedback and model checker results.
 
-\section{Preliminaries, Notation and Definitions}
-    In this section, we introduce the mathematical definitions that form the core of our evaluation engine.
+\section{Theoretical Background}
 
-    \begin{definition}[Geometric Simplex]
-        A geometric $k$-simplex is the convex hull of $k+1$ affinely independent points in Euclidean space. We denote a simplex by the set of its vertices $S = \{p_0, p_1, \dots, p_k\}$. The dimension of the simplex is $k$.
-    \end{definition}
+\subsection{Geometry and Simplicial Complexes}
 
-    \begin{definition}[Simplicial Complex]
-        A geometric simplicial complex $K$ is a set of simplices satisfying two conditions:
-        \begin{enumerate}
-            \item Every face of a simplex in $K$ is also in $K$.
-            \item The non-empty intersection of any two simplices in $K$ is a face of both.
-        \end{enumerate}
-    \end{definition}
+\begin{definition} [Simplex]
+    Given a set of $k+1$ affinely independent points in $\R$ denoted as $\left\{v_0, v_1, \ldots, v_k \right\}$, the $k$-simplex $\sigma$ spanned by these points is defined as the convex hull:
+    \[
+    \sigma = \left[v_0, v_1, \ldots, v_k\right] = \left\{ \sum_{i=0}^{k} \lambda_i v_i \mid \lambda_i \geq 0, \sum_{i=0}^{k} \lambda_i = 1 \right\}.
+    \]
+\end{definition}
 
-    In our implementation, a \texttt{GeometricComplex} is strictly represented by its maximal simplices. To ensure it satisfies the first condition (closure under faces), our serialization algorithm generates the downward closure by computing all combinatorial subsets of the vertices.
+\begin{definition} [Simplicial Complex]
+    A simplicial complex $K$ is a finite collection of simplices such that:
+    \begin{enumerate}
+        \item Every face of a simplex in $K$ is also in $K$.
+        \item The intersection of any two simplices in $K$ is either empty or a face of both simplices.
+    \end{enumerate}
+\end{definition}
 
-    \begin{remark}[Topological Operators]
-        While standard operations like translation, rotation, and scaling preserve the structure of the complex, operations like \textbf{boundary} and \textbf{star} require special interpretation in our geometric context. In standard algebraic topology, the boundary operator maps to a chain complex. In our DSL, we define the geometric boundary of $K$ as the complex containing all simplices strictly smaller than the maximum dimension of $K$. Similarly, the \textbf{star} of a subcomplex $L \subseteq K$ is defined as the set of all simplices in $K$ that contain any simplex of $L$.
-    \end{remark}
+\commentforimage{Immagini di simplessi e complessi simpliciali di varie dimensioni}
 
-\section{The Domain-Specific Language (DSL)}
-    To allow users to intuitively define these spaces, we engineered a declarative grammar using the Lark parsing library. The language supports variable assignments, point declarations, complex definitions, and functional operator calls.
+\begin{remark}
+    Simplicial complexes provide a combinatorial representation of topological spaces, allowing for the application of algebraic topology techniques and spatial logic reasoning.
+\end{remark}
 
-    \begin{lstlisting}[language=Python, caption=Core Grammar Rules of the DSL]
-    program: statement*
+\begin{definition} [Abstract Simplicial Complex]
+    An abstract simplicial complex is a set $K$ of finite subsets of a vertex set $V$ such that if $\sigma \in K$ and $\tau \subseteq \sigma$, then $\tau \in K$. The elements of $K$ are called simplices, and the elements of $V$ are called vertices.
+\end{definition}
 
-    ?statement: point_decl | complex_decl | assign | render_stmt
+\begin{definition} [Dimension]
+    The dimension of a simplex $\sigma = \left[v_0, v_1, \ldots, v_k\right]$ is defined as $k$. The dimension of a simplicial complex $K$ is the maximum dimension of its simplices:
+    \[
+    \dim(K) = \max\{\dim(\sigma) \mid \sigma \in K\}.
+    \]
+\end{definition}
 
-    point_decl: "point" IDENT "=" tuple_coord
-    complex_decl: "complex" IDENT "=" expr
-    render_stmt: "render" IDENT
+\begin{definition} [Downward Closure]
+    The downward closure of a simplex $\sigma$ is the set of all its faces:
+    \[
+    \text{C}(\sigma) = \{\tau \subseteq \sigma \mid \tau \text{ is a face of } \sigma\}.
+    \]
+\end{definition}
 
-    ?expr: op_call | IDENT | vertices_list | tuple_coord | NUMBER | "(" expr ")"
-    op_call: OP "(" arg_list? ")"
-    \end{lstlisting}
+\subsection{Posets and Hasse Diagrams}
 
-    The execution model relies on an \textit{Environment} mapping identifiers to internal data structures (Points, GeometricComplexes, and Operators). When an expression like \texttt{complex t1 = [p0, p1, p2]} is evaluated, the interpreter validates the points and instantiates a \texttt{GeometricComplex} defined by the topological downward closure of the provided vertices.
+\begin{definition} [Partially Ordered Set (Poset)]
+    A partially ordered set (poset) is a set $P$ equipped with a binary relation $\leq$ that is reflexive, antisymmetric, and transitive.
+\end{definition}
+
+\begin{definition} [Hasse Diagram]
+    A Hasse diagram is a graphical representation of a finite poset, where each element is represented as a vertex, and edges are drawn to indicate the covering relations. An edge from vertex $a$ to vertex $b$ is drawn if $a < b$ and there is no $c$ such that $a < c < b$. The diagram is typically drawn so that if $a < b$, then $b$ appears higher than $a$ in the diagram.
+\end{definition}
+
+\begin{remark}
+    The set of simplices in a simplicial complex, ordered by inclusion, forms a poset. The Hasse diagram of this poset visually represents the inclusion relationships among the simplices, which is crucial for spatial model checking in PolyLogicA.
+\end{remark}
+
+\commentforimage{Immagini di un complesso simpliciale a sinistra e il suo diagramma di Hasse a destra}
+
+\begin{remark} 
+    The transition from geometric simplicial complexes to partially ordered sets (posets) is the core computational step for interfacing with spatial model checkers like PolyLogicA. While a simplex is defined by its coordinates in Euclidean space, its logical existence in the model checker is defined by its position in a hierarchy of inclusion. 
+\end{remark}
+
+\subsection{Spatial Logic}
+
+Broadly defined, a spatial logic is any formal language interpreted over a class of structures featuring goemetrical entities and relations. \cite{spatial-logic} provides a comprehensive overview of the various spatial logics, their semantics, and applications.
+
+The origin of this field lies in the topological approach to modal logic initiated by Alfred Tarski, who recognized that modal operators could represent topological notions such as interior and closure.
+
+Modern developments in spatial logic extend these ideas to discrete spatial structures (like graphs or images) using a generalized topological space called a \textbf{closure space} \cite{voxlogica} 
+\begin{definition} [Closure Space]
+    A closure space is a pair $(X, \mathcal{C})$ where $X$ is a set and $\mathcal{C}: \mathcal{P}(X) \to \mathcal{P}(X)$ is a closure operator satisfying the following properties for all $A, B \subseteq X$:
+    \begin{enumerate}
+        \item $\mathcal{C}(\emptyset) = \emptyset$
+        \item $A \subseteq \mathcal{C}(A)$ (Extensivity)
+        \item If $A, B \subseteq X$ and $\mathcal{C}(A \cup B) = \mathcal{C}(A) \cup \mathcal{C}(B)$ 
+    \end{enumerate}
+\end{definition}
+
+\begin{remark}
+    In any topological space $X$ we can define $\mathcal{C}(A)$ as the topological closure of $A$, which is the smallest closed set containing $A$. This closure operator satisfies the properties of a closure operator, making $(X, \mathcal{C})$ a closure space. 
+
+    The closure operator in this case has one additional property: it is idempotent, meaning that $\mathcal{C}(\mathcal{C}(A)) = \mathcal{C}(A)$ for all $A \subseteq X$. This property is not required for a closure space, but it is a defining characteristic of topological spaces.
+\end{remark}
+
+\begin{example} [A closure space which is not a topological space]
+    Consider for a oriented graph $G = (V, E)$ the closure operator $\mathcal{C}$ defined as follows: for any $A \subseteq V$, $\mathcal{C}(A)$ is the set of all vertices in $V$ that can be reached from any vertex in $A$ by a directed path in $G$. This closure operator satisfies the properties of a closure operator, making $(V, \mathcal{C})$ a closure space.
+
+    However, this closure operator is not necessarily idempotent. For example, if $A$ consists of a single vertex with outgoing edges to other vertices, then $\mathcal{C}(A)$ will include those reachable vertices. Applying $\mathcal{C}$ again may yield additional vertices that are reachable from the newly included vertices, thus $\mathcal{C}(\mathcal{C}(A))$ may be strictly larger than $\mathcal{C}(A)$. Therefore, $(V, \mathcal{C})$ is a closure space but not a topological space.
+
+    If the graph is undirected, then the closure operator becomes idempotent, and $(V, \mathcal{C})$ is a topological space. 
+\end{example}
+
+Ciancia et al. define a spatial logic for closure spaces for reasoning about spatial properties of closure spaces.
+\begin{definition} [Spatial Logic for Closure Spaces] \cite{voxlogica}
+    In a closure space $(X, \mathcal{C})$, the syntax of the spatial logic is defined as follows:
+    \[
+    \phi ::= p \mid \neg \phi \mid \phi_1 \wedge \phi_2 \mid \mathcal{N} \phi \mid \phi_1 \mathcal{U} \phi_2
+    \]
+    where $p$ is a propositional variable, $\neg$ is negation, $\wedge$ is conjunction, $\mathcal{N}$ is the "next" operator, and $\mathcal{U}$ is the "until" operator. The semantics of the logic is defined in terms of the closure operator $\mathcal{C}$ and the satisfaction relation $\models$ as follows:
+    \begin{itemize}
+        \item $(X, \mathcal{C}), x \models p$ if $x \in V(p)$, where $V(p)$ is the set of points in $X$ where $p$ is true.
+        \item $(X, \mathcal{C}), x \models \neg \phi$ if $(X, \mathcal{C}), x \not\models \phi$.
+        \item $(X, \mathcal{C}), x \models \phi_1 \wedge \phi_2$ if $(X, \mathcal{C}), x \models \phi_1$ and $(X, \mathcal{C}), x \models \phi_2$.
+        \item $(X, \mathcal{C}), x \models \mathcal{N} \phi$ if there exists $y \in \mathcal{C}(\{x\})$ such that $(X, \mathcal{C}), y \models \phi$.
+        \item $(X, \mathcal{C}), x \models \phi_1 \mathcal{U} \phi_2$ if there exists a finite sequence of points $x_0, x_1, \ldots, x_n \in X$ such that $x_0 = x$, $(X, \mathcal{C}), x_n \models \phi_2$, and for all $0 \leq i < n$, $(X, \mathcal{C}), x_i \models \phi_1$.
+    \end{itemize}
+\end{definition}
+
+We will not go into the details of the semantics of the logic, but we will focus on how to represent geometric simplicial complexes in a way that allows us to reason about their spatial properties using this logic.
+
+
+% \section{Geometric DSL: Syntax and Semantics}
+
+% Prova
+
+% \section{Implementation Details}
+
+% Prova
+
+% \section{Integration with PolyLogicA}
+
+% Prova
+
+% \section{Examples and Model Checking}
+
+
+% \section{Conclusion and Future Work}
 
 \begin{thebibliography}{9}
     \bibitem{spatial-logic}
@@ -96,7 +190,7 @@
     
     \bibitem{voxlogica}
     Vincenzo Ciancia et al.,
-    \textit{VoxLogicA: A Spatial Model Checker},
+    \textit{VoxLogicA: A Spatial Model Checker}.
 \end{thebibliography}
     
 \end{document}

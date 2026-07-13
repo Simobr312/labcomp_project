@@ -1,0 +1,14 @@
+point a = (0.0, 0.0)
+point b = (10.0, 0.0)
+point c = (0.0, 10.0)
+
+function my_rotate(theta) {
+    function fixed_rotation(triangle) {
+        return rotate(triangle, theta)
+    }
+    return fixed_rotation
+}
+
+complex t1 = [a, b, c]
+
+complex t2 = my_rotate(30)(t1)
