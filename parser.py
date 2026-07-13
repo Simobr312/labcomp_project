@@ -8,6 +8,7 @@ defined_operations = {"translate", "rotate", "scale", "dim", "num_vert", "union"
 op_regex = "|".join(defined_operations)
 
 # Parser grammar
+# We updated func_call to: expr "(" call_args ")"
 grammar = fr"""
     program: statement*
 
@@ -34,7 +35,7 @@ grammar = fr"""
         | "(" expr ")"
 
     op_call: OP "(" arg_list? ")"
-    func_call: IDENT "(" call_args ")"
+    func_call: expr "(" call_args ")" 
     
     tuple_coord: "(" expr "," expr ")"
     vertices_list: "[" id_list "]"
@@ -77,7 +78,7 @@ class OpCall:
 
 @dataclass
 class FuncCall:
-    name: str
+    caller: Expr
     args: List["Expr"]
 
 Expr = Ref | PointLiteral | ComplexLiteral | OpCall | FuncCall | NumberLiteral
@@ -134,10 +135,12 @@ def transform_expr_tree(tree) -> Expr:
         case Tree("op_call", [Token("OP", op)]):
             return OpCall(op, [])
 
-        case Tree("func_call", [Token("IDENT", name), call_args]):
+        case Tree("func_call", [caller_node, call_args]):
+            # Dynamically transform the caller side of the expression
+            caller = transform_expr_tree(caller_node)
             children = call_args.children if isinstance(call_args, Tree) else call_args
             args = [transform_expr_tree(a) for a in children]
-            return FuncCall(name, args)
+            return FuncCall(caller, args)
 
         case Token("IDENT", name):
             return name
@@ -167,7 +170,6 @@ def transform_statement_tree(tree) -> Statement:
             return RenderStmt(name)
 
         case Tree("func_decl", [Token("IDENT", name), param_list, *body_nodes]):
-            # Safely check if Lark returned an empty list or a Tree for parameter sequences
             children = param_list.children if isinstance(param_list, Tree) else param_list
             params = [tok.value for tok in children if isinstance(tok, Token)]
             body = [transform_statement_tree(b) for b in body_nodes]
