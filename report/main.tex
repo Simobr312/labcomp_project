@@ -14,6 +14,9 @@
 \usepackage{subcaption}
 \usepackage{listings}
 
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+
 \geometry{margin=2.5cm}
 
 \newtheorem{theorem}{Theorem}
@@ -165,21 +168,247 @@ Ciancia et al. define a spatial logic for closure spaces for reasoning about spa
 We will not go into the details of the semantics of the logic, but we will focus on how to represent geometric simplicial complexes in a way that allows us to reason about their spatial properties using this logic.
 
 
-% \section{Geometric DSL: Syntax and Semantics}
+\section{Geometric DSL}
+
+\subsection{Structure}
+The DSL is designed to be a simple and expressive language for defining geometric simplicial complexes. The DSL's code is structured into several components, each responsible for a specific aspect of the language's functionality. The main components are:
+\begin{itemize}
+    \item \textbf{Parser}: The parser is responsible for reading the DSL code and converting it into an abstract syntax tree (AST).
+    \item \textbf{Core}: The core component is responsible for evaluating the AST and constructing the corresponding geometric simplicial complex.
+    \item \textbf{Exporter}: The exporter component is responsible for serializing the geometric simplicial complex into a format that can be used by the web interface and by PolyLogicA.
+\end{itemize}
+
+They are implemented in the following files:
+
+\begin{lstlisting}[caption={Project directory tree},label={lst:dir-tree}]
+project-root/
+|-- report/
+|   `-- main.tex
+|-- src/
+|   |-- parser.py
+|   |-- core.py
+|   `-- exporter.py
+|-- web/
+|   |-- index.html
+|   |-- render.js
+    `-- visualization.js
+`-- README.md
+\end{lstlisting}
+
+\subsection{Syntax}
+The syntax of the DSL is deisegned for defining geometric simplicial complexes in a concise manner. The language allows users to specify vertices, simplices, some operations on them.
+
+\begin{lstlisting}[language=Python,caption={Grammar of the Geometric DSL}, label={lst:grammar}]
+    program: statement*
+
+    ?statement: point_decl
+              | complex_decl
+              | assign
+              | render_stmt
+              | func_decl
+              | return_stmt
+
+    point_decl: "point" IDENT "=" tuple_coord
+    complex_decl: "complex" IDENT "=" expr
+    render_stmt: "render" IDENT
+    func_decl: "function" IDENT "(" param_list ")" "{{" statement* "}}"
+    return_stmt: "return" expr
+
+    ?expr: op_call
+        | func_call
+        | IDENT
+        | vertices_list
+        | tuple_coord
+        | NUMBER 
+        | "(" expr ")"
+
+    op_call: OP "(" arg_list? ")"
+    func_call: expr "(" call_args ")" 
+    
+    tuple_coord: "(" expr "," expr ")"
+    vertices_list: "[" id_list "]"
+    id_list: IDENT ("," IDENT)*
+    arg_list: expr ("," expr)*
+    param_list: (IDENT ("," IDENT)*)?
+    call_args: (expr ("," expr)*)?
+
+    OP.2: /{op_regex}/
+    IDENT: /[A-Za-z_][A-Za-z0-9_]*/
+    
+    NUMBER: /-?[0-9]+(\.[0-9]+)?/
+
+    COMMENT: "//" /[^\n]/* "\n"
+    %ignore COMMENT
+    WS: /[ \t\f\r\n]+/
+    %ignore WS
+\end{lstlisting}
+
+To parse this grammar, we use the Lark parser library in Python in the file \texttt{dsl\_parser.py}. The parser generates an abstract syntax tree (AST) that represents the structure of the input program. The AST is then traversed to evaluate the expressions and construct the corresponding geometric simplicial complex.
+
+\begin{itemize}
+    \item \textbf{Point Declarations (\texttt{PointDecl})}: Instantiates a coordinate pair $(x, y)$ in $\mathbb{R}^2$.
+    \item \textbf{Complex Declarations (\texttt{ComplexDecl})}: Instantiates a simplicial complex from a list of vertices or through operations.
+    \item \textbf{Render Statements (\texttt{RenderStmt})}: Registers a target complex to be exported and visualized by the web interface.
+    \item \textbf{Function Definitions (\texttt{FunctionDecl})}: Standard functional structures that yield runtime closures to enable procedural abstraction.
+\end{itemize}
+
+\subsection{Semantics: Evaluation and Denotational Values}
+
+The evaluation of the program is defined over well-defined expressible and denotationalvalues:
+
+\begin{lstlisting}[language=Python,caption={Types for Evaluation},label={lst:eval-dval}]
+    type EVal = Geometric | Num | Closure | None
+    type DVal = EVal | Operator | Closure
+
+    type Geometric = Point | Complex
+    type Num = int | float
+\end{lstlisting}
+
+The variable evluation enviroment is a mapping from identifiers to denotational values:
+\[
+    \rho : \text{IDENT} \to \text{DVal}
+\]
+
+It is implemented as a Dictionary in Python, where the keys are the identifiers and the values are the corresponding denotational values.
+
+\begin{lstlisting}[language=Python,caption={Environment},label={lst:environment}]
+    type Environment = Dict[str, DVal]
+\end{lstlisting}
+
+The evaluation of the program is defined as a function that takes an AST and returns a environment.
+
+\subsection{Semantics: Operations}
+
+The language supports a set of operations that can be applied to geometric simplicial complexes. These operations are defined as functions that take complexes and numbers as input and return a new complex as output. The operations include:
+
+\begin{lstlisting}[language=Python,caption={Geometric Operations},label={lst:geom-ops}]
+    def union(complex1: Complex, complex2: Complex) -> Complex:
+
+    def intersection(complex1: Complex, complex2: Complex) -> Complex:
+
+    def difference(complex1: Complex, complex2: Complex) -> Complex:
+
+    def translate(complex: Complex, vector: Tuple[float, float]) -> Complex:
+
+    def scale(complex: Complex, factor: float) -> Complex:
+\end{lstlisting}
+
+The semantics of these operations are defined in terms of the underlying geometric representation, therefore we will not go into the details making the assumption that the reader is familiar with basic geometric operations.
+
+There are also some other operations which maybe have a more complex semantics, such as
+\begin{lstlisting}[language=Python,caption={Topological Operations},label={lst:top-ops}]
+    def boundary(complex: Complex) -> Complex:
+        """Returns the boundary of the complex"""
+
+    def star(complex: Complex, vertex: Point) -> Complex:
+        """Returns the star of a vertex in the complex"""
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Boundary ($\partial$):} 
+    For a simplicial complex $K$, the boundary operator computes its topological boundary. Geometrically, if $K$ is a $d$-dimensional simplicial complex, its boundary consists of those $(d-1)$-simplices that are faces of exactly one $d$-simplex, along with their downward closure:
+    \[
+    \partial(K) = \{ \sigma \in K \mid \dim(\sigma) < \dim(K) \text{ and } \sigma \text{ is a face of an odd number of maximal simplices} \}.
+    \]
+
+    In our constructive implementation, it extracts this sub-complex, preserving the combinatorial and structural requirements of a simplicial complex.
+
+    \item \textbf{Star ($\text{St}$):} 
+    Given a simplicial complex $K$ and a target vertex (or sub-complex) $v$, the star consists of all simplices in $K$ that contain $v$:
+    \[
+    \text{St}(v) = \{ \sigma \in K \mid v \subseteq \sigma \}.
+    \]
+
+    Since the open star is not necessarily closed under taking subset faces, our DSL implementation returns the \textbf{closed star} (the closure of the star), which automatically includes all subset faces, guaranteeing that the result forms a valid, self-contained sub-complex.
+\end{itemize}
+
+These have been implemented because one of the future goals of this project would be to reason about algebraic topological concepts such as holes.
+
+\subsection{Semantics: Render Operation}
+Another operation is the \texttt{render} operation, which is used to mark a complex for export and visualization. The semantics of this operation is to add the complex to a list of render targets, which will be serialized and sent to the web interface for visualization.
+
+\section{Implementation Details}
+\label{sec:implementation}
+
+The execution pipeline of the DSL consists of three main phases: parsing the source text into an Abstract Syntax Tree (AST), dynamically evaluating the AST within a scoped environment, and serializing the resulting geometric structures into a partially ordered set (poset) for PolyLogicA. 
+
+\subsection{Core Data Structures}
+To guarantee mathematical correctness, especially regarding the properties of simplicial complexes (where order of vertices does not matter and duplicates are not allowed), we leverage Python's native data structures.
+
+In \texttt{core.py}, a \texttt{Point} is defined as a dataclass, ensuring it is hashable. A \texttt{Complex} is represented as a Python \texttt{Set} of \texttt{FrozenSet}s of Points:
+\begin{lstlisting}[language=Python, caption={Core Geometric Data Structures}, label={lst:core_structs}]
+@dataclass(frozen=True)
+class Point:
+    x: float
+    y: float
+
+@dataclass
+class Complex:
+    simplices: Set[FrozenSet[Point]]
+\end{lstlisting}
+This specific formulation guarantees that operations like union and intersection can directly leverage highly optimized set-theoretic operations at the Python interpreter level.
+
+\subsection{AST Evaluation and Control Flow}
+The evaluator traverses the AST nodes defined in \texttt{parser.py} (e.g., \texttt{PointDecl}, \texttt{ComplexDecl}, \texttt{FuncCall}) and recursively resolves them against the active \texttt{Environment}.
+
+A notable implementation detail is the handling of function calls and lexical closures. When a \texttt{FunctionDecl} is evaluated, it is packed into a \texttt{Closure} object that captures the current environment. To manage control flow—specifically early exits via \texttt{return} statements inside function bodies—we utilize a custom exception mechanism:
+\begin{lstlisting}[language=Python, caption={Exception-based Control Flow for Returns}, label={lst:return_exception}]
+class ReturnException(Exception):
+    def __init__(self, value: EVal):
+        self.value = value
+\end{lstlisting}
+When the evaluator encounters a \texttt{ReturnStmt}, it raises a \texttt{ReturnException} containing the evaluated expression. The function application wrapper catches this exception and extracts the value, cleanly simulating call-stack unwinding.
+
+\subsection{Topological Serialization and Poset Generation}
+\label{subsec:serialization}
+
+The transition from continuous geometric representations to discrete logical structures occurs in the \texttt{export.py} module. PolyLogicA requires topological spaces to be represented as Hasse diagrams (posets) of closure spaces. 
+
+To achieve this, we used a \texttt{\_build\_downward\_closure} algorithm. For every complex marked by a \texttt{render\_targets} directive, the algorithm extracts all maximal simplices and systematically generates all possible sub-simplices (faces, edges, vertices) using Python's \texttt{itertools.combinations}. 
+
+\begin{lstlisting}[language=Python, caption={Downward Closure Generation}]
+def _build_downward_closure(complexes: ComplexEnv) -> tuple[list[frozenset], dict[frozenset, str], dict[frozenset, set[str]]]:
+    """Generates all sub-simplices, assigning unique string IDs and tracking their source variable atoms."""
+
+    for name, complex_obj in complexes.items():
+        for max_simplex in complex_obj.simplices:
+            pts = list(max_simplex)
+            # Generate all dimensional subsets (vertices, edges, faces)
+            for r in range(1, len(pts) + 1):
+                for sub_combo in itertools.combinations(pts, r):
+                    simplex_atoms[frozenset(sub_combo)].add(name)
+                    
+    sorted_simplices = sorted(simplex_atoms.keys(), key=len)
+    simplex_to_id = {simp: str(idx) for idx, simp in enumerate(sorted_simplices)}
+    return sorted_simplices, simplex_to_id, simplex_atoms
+\end{lstlisting}
+
+\subsection{Integration with PolyLogicA}
+The serialized poset is then formatted into a JSON structure compatible with PolyLogicA's input requirements. Each simplex is assigned a unique identifier, and the covering relations are encoded as adjacency lists. This allows the spatial model checker to interpret the geometric structures and evaluate spatial logic queries effectively.
+
+The function \texttt{export\_to\_polylogica} in \texttt{export.py} handles this final step, ensuring that the output is both syntactically and semantically valid for PolyLogicA's processing pipeline.
+
+\section{Examples and Model Checking}
+Prova 
+
+% \begin{example}
+%     We define a simple 2D simplicial complex representing three triangles with some of their edges shared. The DSL code snippet is as follows:
+%     \begin{lstlisting}[language=Python, caption={DSL Code for Example 1}, label={lst:example1}]
+%         point p0 = (0, 0)
+% point p1 = (10, 0)
+% point p2 = (5, 10)
+% point p3 = (15, 10)
+% point p4 = (10, 20)
+
+% complex t1 = [p0, p1, p2]
+% complex t2 = [p1, p3, p2]
+% complex t3 = [p2, p3, p4]
+%     \end{lstlisting}
+% \end{example}
+
+% This will generate the simplicial complex seen in Figure \ref{fig:example1}. The downward closure of this complex will include all vertices, edges, and faces, which will be serialized into a poset for PolyLogicA.
 
 % Prova
-
-% \section{Implementation Details}
-
-% Prova
-
-% \section{Integration with PolyLogicA}
-
-% Prova
-
-% \section{Examples and Model Checking}
-
-
 % \section{Conclusion and Future Work}
 
 \begin{thebibliography}{9}
