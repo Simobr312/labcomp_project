@@ -40,9 +40,58 @@
 
 \newcommand{\commentforimage}[1]{\text{\color{red} [Image Placeholder]: #1}}
 
+\usepackage{listings}
+\usepackage{tcolorbox}
+\tcbuselibrary{listings, skins}
 
+% --- Modern Color Palette (One Dark Inspired) ---
+\definecolor{codebg}{RGB}{40, 44, 52}         % Dark background
+\definecolor{codeframe}{RGB}{24, 26, 31}      % Darker border
+\definecolor{keyword}{RGB}{198, 120, 221}     % Purple
+\definecolor{string}{RGB}{152, 195, 121}      % Green
+\definecolor{comment}{RGB}{92, 99, 112}       % Gray
+\definecolor{identifier}{RGB}{97, 175, 239}   % Blue
+\definecolor{number}{RGB}{209, 154, 102}      % Orange
 
-\title{A Domain-Specific Language and Web Interface for Geometric Simplicial Complexes in PolyLogicA}
+% Custom style for the listings engine
+\lstdefinestyle{modernpython}{
+    language=Python,
+    basicstyle=\ttfamily\small\color{white},  % White text for dark mode
+    keywordstyle=\color{keyword}\bfseries,
+    stringstyle=\color{string},
+    commentstyle=\color{comment}\itshape,
+    identifierstyle=\color{identifier},
+    numberstyle=\tiny\color{comment},
+    numbers=left,
+    numbersep=12pt,
+    breaklines=true,
+    showstringspaces=false,
+    upquote=true
+}
+
+% --- Custom tcolorbox wrapper to make it look like an IDE window ---
+\newtcblisting{codebox}[2][]{
+    colback=codebg,
+    colframe=codeframe,
+    arc=6pt,                           % Smooth rounded corners
+    boxrule=1.5pt,
+    listing only,
+    enhanced,
+    title={#2},                        % File/language header
+    coltitle=white,
+    fonttitle=\ttfamily\small\bfseries,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={
+        colback=codeframe, 
+        arc=4pt, 
+        boxrule=0pt,
+        top=2pt, bottom=2pt, left=8pt, right=8pt
+    },
+    listing style=modernpython,
+    #1
+}
+
+\title{A Domain-Specific Language for Geometric Simplicial Complexes working with PolyLogicA}
 \author{Simone Riccio}
 \date{\today}
 
@@ -51,10 +100,22 @@
 \maketitle
 
 \begin{abstract}
-    This report presents the design and implementation of a novel Domain-Specific Language (DSL) and web interface tailored for the construction and manipulation of geometric simplicial complexes. Developed to interface directly with the PolyLogicA branch of the VoxLogicA project, this tool allows users to define topological spaces in Euclidean coordinates, apply geometric transformations, and evaluate spatial logic queries. We detail the language grammar, the abstract syntax tree evaluation, and the topological serialization process required to generate the Hasse diagram (poset) representations necessary for spatial model checking.
+    This report presents a Domain-Specific Language (DSL) and a web interface designed for defining and visualizing geometric simplicial complexes in the Euclidean plane. The DSL allows users to instantiate points, define simplices, and apply geometric transformations and topological operations. The generated complexes are then serialized into a poset representation suitable for use in PolyLogicA, a spatial model checker. The web interface provides an interactive 3D visualization of the defined complexes, enabling users to explore their spatial properties and perform spatial logic queries.
 \end{abstract}
 
 \section{Introduction}
+
+Spatial logics are extensions of classical modal logic to reason rigorously about topological and geometrical properties of spaces. The VoxLogicA project provides a framework for spatial model checking, allowing users to verify properties of topological spaces represented as closure spaces. 
+
+Specifically, the PolyLogicA branch of VoxLogicA focuses on reasoning about posets. In this project, we present a DSL and web interface that allows users to define geometric simplicial complexes in the Euclidean plane, and then automatically generate the corresponding poset representation for use in PolyLogicA.
+
+The project introduces a novel Domain-Specific Language (DSL) and an interactive web interface, designed specifically for the generation and manipulation of geometric simplicial complexes. The proposed DSL can instantiate points, define simplices, and apply both geometric transformations (such as translation and scaling) and topological operations (such as boundaries and stars).
+
+Before the creation of the DSL, developers working with PolyLogicA had to manually write JSON files representing posets in a non-human-intuitive format. This process was error-prone and slow, especially for complex geometric structures. The DSL abstracts this complexity, allowing users to define geometric simplicial complexes in a more natural and mathematically rigorous manner.
+
+Furthermore, spatial reasoning is inherently visual. The project includes a web interface providing a 3D scene rendered using Three.js, allowing users to visualize the geometric simplicial complexes they define. This visual feedback is crucial for understanding the spatial relationships and properties of the complexes. The interface also allows users to input spatial logic queries and visualize them.
+
+The remainder of this report is structured as follows: Section 2 provides the theoretical background, Section 3 details the design and implementation of the DSL, Section 4 describes the web interface, and Section 5 presents examples and some query results.
 
 \section{Theoretical Background}
 
@@ -75,7 +136,12 @@
     \end{enumerate}
 \end{definition}
 
-\commentforimage{Immagini di simplessi e complessi simpliciali di varie dimensioni}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.4\textwidth]{simplicialcomplex.png}
+    \caption{A simplicial complex.}
+    \label{fig:simplicial_complex}
+\end{figure}
 
 \begin{remark}
     Simplicial complexes provide a combinatorial representation of topological spaces, allowing for the application of algebraic topology techniques and spatial logic reasoning.
@@ -99,7 +165,7 @@
     \]
 \end{definition}
 
-\subsection{Posets and Hasse Diagrams}
+\subsection{Posets}
 
 \begin{definition} [Partially Ordered Set (Poset)]
     A partially ordered set (poset) is a set $P$ equipped with a binary relation $\leq$ that is reflexive, antisymmetric, and transitive.
@@ -113,19 +179,17 @@
     The set of simplices in a simplicial complex, ordered by inclusion, forms a poset. The Hasse diagram of this poset visually represents the inclusion relationships among the simplices, which is crucial for spatial model checking in PolyLogicA.
 \end{remark}
 
-\commentforimage{Immagini di un complesso simpliciale a sinistra e il suo diagramma di Hasse a destra}
-
 \begin{remark} 
     The transition from geometric simplicial complexes to partially ordered sets (posets) is the core computational step for interfacing with spatial model checkers like PolyLogicA. While a simplex is defined by its coordinates in Euclidean space, its logical existence in the model checker is defined by its position in a hierarchy of inclusion. 
 \end{remark}
 
 \subsection{Spatial Logic}
 
-Broadly defined, a spatial logic is any formal language interpreted over a class of structures featuring goemetrical entities and relations. \cite{spatial-logic} provides a comprehensive overview of the various spatial logics, their semantics, and applications.
+Broadly defined, a spatial logic is any formal language interpreted over a class of structures featuring geometrical entities and relations. \cite{spatial-logic} provides a comprehensive overview of the various spatial logics, their semantics, and applications.
 
 The origin of this field lies in the topological approach to modal logic initiated by Alfred Tarski, who recognized that modal operators could represent topological notions such as interior and closure.
 
-Modern developments in spatial logic extend these ideas to discrete spatial structures (like graphs or images) using a generalized topological space called a \textbf{closure space} \cite{voxlogica} 
+Modern developments in spatial logic extend these ideas to discrete spatial structures (like graphs or images) using a generalized topological space called a \textbf{closure space} \cite{voxlogica}.
 \begin{definition} [Closure Space]
     A closure space is a pair $(X, \mathcal{C})$ where $X$ is a set and $\mathcal{C}: \mathcal{P}(X) \to \mathcal{P}(X)$ is a closure operator satisfying the following properties for all $A, B \subseteq X$:
     \begin{enumerate}
@@ -142,7 +206,7 @@ Modern developments in spatial logic extend these ideas to discrete spatial stru
 \end{remark}
 
 \begin{example} [A closure space which is not a topological space]
-    Consider for a oriented graph $G = (V, E)$ the closure operator $\mathcal{C}$ defined as follows: for any $A \subseteq V$, $\mathcal{C}(A)$ is the set of all vertices in $V$ that can be reached from any vertex in $A$ by a directed path in $G$. This closure operator satisfies the properties of a closure operator, making $(V, \mathcal{C})$ a closure space.
+    Consider for an oriented graph $G = (V, E)$ the closure operator $\mathcal{C}$ defined as follows: for any $A \subseteq V$, $\mathcal{C}(A)$ is the set of all vertices in $V$ that can be reached from any vertex in $A$ by a directed path in $G$. This closure operator satisfies the properties of a closure operator, making $(V, \mathcal{C})$ a closure space.
 
     However, this closure operator is not necessarily idempotent. For example, if $A$ consists of a single vertex with outgoing edges to other vertices, then $\mathcal{C}(A)$ will include those reachable vertices. Applying $\mathcal{C}$ again may yield additional vertices that are reachable from the newly included vertices, thus $\mathcal{C}(\mathcal{C}(A))$ may be strictly larger than $\mathcal{C}(A)$. Therefore, $(V, \mathcal{C})$ is a closure space but not a topological space.
 
@@ -196,7 +260,7 @@ project-root/
 \end{lstlisting}
 
 \subsection{Syntax}
-The syntax of the DSL is deisegned for defining geometric simplicial complexes in a concise manner. The language allows users to specify vertices, simplices, some operations on them.
+The syntax of the DSL is designed for defining geometric simplicial complexes in a concise manner. The language allows users to specify vertices, simplices, and operations on them.
 
 \begin{lstlisting}[language=Python,caption={Grammar of the Geometric DSL}, label={lst:grammar}]
     program: statement*
@@ -254,7 +318,7 @@ To parse this grammar, we use the Lark parser library in Python in the file \tex
 
 \subsection{Semantics: Evaluation and Denotational Values}
 
-The evaluation of the program is defined over well-defined expressible and denotationalvalues:
+The evaluation of the program is defined over well-defined expressible and denotational values:
 
 \begin{lstlisting}[language=Python,caption={Types for Evaluation},label={lst:eval-dval}]
     type EVal = Geometric | Num | Closure | None
@@ -264,7 +328,7 @@ The evaluation of the program is defined over well-defined expressible and denot
     type Num = int | float
 \end{lstlisting}
 
-The variable evluation enviroment is a mapping from identifiers to denotational values:
+The variable evaluation environment is a mapping from identifiers to denotational values:
 \[
     \rho : \text{IDENT} \to \text{DVal}
 \]
@@ -275,7 +339,7 @@ It is implemented as a Dictionary in Python, where the keys are the identifiers 
     type Environment = Dict[str, DVal]
 \end{lstlisting}
 
-The evaluation of the program is defined as a function that takes an AST and returns a environment.
+The evaluation of the program is defined as a function that takes an AST and returns an environment.
 
 \subsection{Semantics: Operations}
 
@@ -295,7 +359,7 @@ The language supports a set of operations that can be applied to geometric simpl
 
 The semantics of these operations are defined in terms of the underlying geometric representation, therefore we will not go into the details making the assumption that the reader is familiar with basic geometric operations.
 
-There are also some other operations which maybe have a more complex semantics, such as
+There are also some other operations which may have more complex semantics, such as:
 \begin{lstlisting}[language=Python,caption={Topological Operations},label={lst:top-ops}]
     def boundary(complex: Complex) -> Complex:
         """Returns the boundary of the complex"""
@@ -333,7 +397,7 @@ Another operation is the \texttt{render} operation, which is used to mark a comp
 The execution pipeline of the DSL consists of three main phases: parsing the source text into an Abstract Syntax Tree (AST), dynamically evaluating the AST within a scoped environment, and serializing the resulting geometric structures into a partially ordered set (poset) for PolyLogicA. 
 
 \subsection{Core Data Structures}
-To guarantee mathematical correctness, especially regarding the properties of simplicial complexes (where order of vertices does not matter and duplicates are not allowed), we leverage Python's native data structures.
+To guarantee mathematical correctness, especially regarding the properties of simplicial complexes (where the order of vertices does not matter and duplicates are not allowed), we leverage Python's native data structures.
 
 In \texttt{core.py}, a \texttt{Point} is defined as a dataclass, ensuring it is hashable. A \texttt{Complex} is represented as a Python \texttt{Set} of \texttt{FrozenSet}s of Points:
 \begin{lstlisting}[language=Python, caption={Core Geometric Data Structures}, label={lst:core_structs}]
@@ -388,28 +452,157 @@ The serialized poset is then formatted into a JSON structure compatible with Pol
 
 The function \texttt{export\_to\_polylogica} in \texttt{export.py} handles this final step, ensuring that the output is both syntactically and semantically valid for PolyLogicA's processing pipeline.
 
+\section{Web Interface}
+
+To test the DSL, I implemented a web interface using Three.js, which allows for the visualization of the geometric simplicial complexes defined in the DSL. The web interface is implemented in the \texttt{web} directory, and consists of an HTML file (\texttt{index.html}) and two JavaScript files (\texttt{render.js} and \texttt{visualization.js}).
+
+The UI is designed to be simple and intuitive, as seen in Figure \ref{fig:web-interface}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{webinterface/image.png}
+    \caption{Web Interface for Visualizing Geometric Simplicial Complexes}
+    \label{fig:web-interface}
+\end{figure}
+
+The interface is divided in half: on the left side there are two selectable text areas, one for the DSL code and one for the spatial logic queries, and on the right side there is a 3D visualization of the geometric simplicial complexes defined in the DSL code. The visualization is in 3D and interactive because we are planning to extend the DSL to 3D simplicial complexes in the future.
+
+In the bottom right corner there are the results of the spatial logic queries, which are displayed as a list of simplices that satisfy the query. The user can select a property of the results by clicking the "Draw Results" button, and the simplices that satisfy the query will be highlighted in the 3D visualization.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{webinterface/query.png}
+    \caption{Web Interface for Visualizing Spatial Logic Query Results}
+    \label{fig:web-interface-query}
+\end{figure}
+
 \section{Examples and Model Checking}
-Prova 
 
-% \begin{example}
-%     We define a simple 2D simplicial complex representing three triangles with some of their edges shared. The DSL code snippet is as follows:
-%     \begin{lstlisting}[language=Python, caption={DSL Code for Example 1}, label={lst:example1}]
-%         point p0 = (0, 0)
-% point p1 = (10, 0)
-% point p2 = (5, 10)
-% point p3 = (15, 10)
-% point p4 = (10, 20)
+    We define a simple 2D simplicial complex representing three triangles with some of their edges shared. The DSL code snippet is as follows:
+    \begin{lstlisting}[language=Python, caption={DSL Code for Example 1}, label={lst:example1dsl}]
+point p0 = (0, 0)
+point p1 = (10, 0)
+point p2 = (5, 10)
+point p3 = (15, 10)
+point p4 = (10, 20)
 
-% complex t1 = [p0, p1, p2]
-% complex t2 = [p1, p3, p2]
-% complex t3 = [p2, p3, p4]
-%     \end{lstlisting}
-% \end{example}
+complex t1 = [p0, p1, p2]
+complex t2 = [p1, p3, p2]
+complex t3 = [p2, p3, p4]
+    \end{lstlisting}
 
-% This will generate the simplicial complex seen in Figure \ref{fig:example1}. The downward closure of this complex will include all vertices, edges, and faces, which will be serialized into a poset for PolyLogicA.
+This will generate the simplicial complex seen in Figure \ref{fig:example1}. The downward closure of this complex will include all vertices, edges, and faces, which will be serialized into a poset for PolyLogicA.
 
-% Prova
-% \section{Conclusion and Future Work}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{example1/plain.png}
+    \caption{Simplicial Complex from Example 1}
+    \label{fig:example1}
+\end{figure}
+
+We can then apply spatial logic queries to this complex using PolyLogicA. For example:
+
+\begin{lstlisting}[language=Python, caption={Query for Example 1}, label={lst:example1query2}]
+let t1 = ap("t1")
+let t2 = ap("t2")
+let t3 = ap("t3")
+
+let commonedge = t1 & t2
+save "commonedge" commonedge
+
+let tripleintersection = t1 & t2 & t3
+save "tripleintersection" tripleintersection
+    \end{lstlisting}
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{example1/query2.png}
+        \caption{Result of the Query for Example 1}
+        \label{fig:example1-query}
+    \end{minipage}\hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{example1/query1.png}
+        \caption{Result of the Query for Example 1}
+        \label{fig:example2-query}
+    \end{minipage}
+\end{figure}
+
+We can also define more complex objects using functions and operations. For example:
+    \begin{lstlisting}[language=Python, caption={DSL Code for Example 2}, label={lst:example2dsl}]
+point p0 = (0, 0)
+point p1 = (10, 0)
+point p2 = (5, 10)
+
+complex t1 = [p0, p1, p2]
+
+function shift(dx, dy) {
+    point offset = (dx, dy)
+    return translate(t1, offset)
+}
+
+complex t2 = shift(10, 0)
+complex t3 = shift(20, 0)
+complex t4 = shift(10, 15)
+
+complex together = union(t1, union(t2, union(t3, t4)))
+    \end{lstlisting}
+
+The resulting complex is shown in Figure \ref{fig:example2}. It consists of four triangles, with some of them sharing edges and vertices.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{example2/query1.png}
+    \caption{Resulting Complex from Example 2}
+    \label{fig:example2}
+\end{figure}
+
+And we can apply spatial logic queries to this complex to check for connected components by using the $\gamma$ operator, which computes the closure of a complex with respect to another complex. For example, we can check if $together$ is connected to $t2$ by computing the closure of $together$ with respect to $t2$:
+    \begin{lstlisting}[language=Python, caption={Query for Example 2}, label={lst:example2query}]
+        let t1 = ap("t1")
+let t2 = ap("t2")
+let t3 = ap("t3")
+let t4 = ap("t4")
+
+let together = ap("together")
+
+let near = gamma(together, t2)
+
+save "near" near
+    \end{lstlisting}
+
+\begin{remark}
+    In this project I am treating the geometric simplicial complexes as formulas. In a future version of the DSL, I would like to treat them only as models that can have different assigned properties (for example, color or other attributes) and then use the spatial logic to reason about these properties. This would allow for a more expressive and flexible DSL, where the user can define complex spatial relationships and properties, and then use the spatial logic to reason about them.
+\end{remark}
+
+\subsection{Currying of Functions}
+
+I also implemented the currying of functions, which allows for more expressive definitions.
+
+For example, I can define a function that takes an angle and returns a function that takes a complex and rotates it by that angle:
+    \begin{lstlisting}[language=Python, caption={DSL Code for Example 3}, label={lst:example3dsl}]
+function rotate_by(angle) {
+    function rotate_complex(complex) {
+        return rotate(complex, angle)
+    }
+    return rotate_complex
+}
+
+complex t1 = [p0, p1, p2]
+complex t2 = rotate_by(90)(t1)
+
+\end{lstlisting}
+
+\section{Conclusion and Future Work}
+
+While the current implementation of the DSL establishes a foundational framework for intuitively defining and manipulating geometrical objects, there are several avenues for future enhancement.
+
+The most important improvement would be to extend the DSL to add properties to the simplices, allowing users to assign attributes such as color. This would enable more complex spatial reasoning, as the spatial logic could then be used to query and manipulate these properties. For example, one could define the properties "being red" and "being blue" and check whether all the red simplices are connected to the blue ones.
+
+The most immediate improvement would be to extend the DSL syntax to support 3D simplicial complexes, allowing users to define and manipulate tetrahedra and other higher-dimensional simplices. This would not be difficult because the core data structures and operations are already defined in a dimension-agnostic way, and the web interface is already using Three.js, which supports 3D rendering. It just needs a few changes to the grammar and the operations to support 3D coordinates.
+
+Expanding the DSL or PolyLogicA to support algebraic topology concepts would actually be a significant enhancement. This would allow users to reason about holes, connected components, and other topological features of the simplicial complexes. For example, one could define the property "having a hole" and check properties like "all the red complexes have a hole" or "there is a blue complex that is connected to a red complex with a hole".
 
 \begin{thebibliography}{9}
     \bibitem{spatial-logic}

@@ -1,0 +1,6 @@
+let t2 = ap("t2")
+let t3 = ap("t3")
+
+let intersection = t2 & t3
+
+save "int" intersection

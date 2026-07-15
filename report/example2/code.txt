@@ -1,6 +1,29 @@
+// Define the vertices of our base triangle
+point p0 = (0, 0)
+point p1 = (10, 0)
+point p2 = (5, 10)
+
+complex t1 = [p0, p1, p2]
+
+// Define a function to generate translated copies
+function shift(dx, dy) {
+    point offset = (dx, dy)
+    return translate(t1, offset)
+}
+
+complex t2 = shift(10, 0)
+complex t3 = shift(20, 0)
+complex t4 = shift(10, 15)
+
+complex together = union(t1, union(t2, union(t3, t4)))
+
+let t1 = ap("t1")
 let t2 = ap("t2")
 let t3 = ap("t3")
+let t4 = ap("t4")
 
-let intersection = t2 & t3
+let together = ap("together")
 
-save "int" intersection
+let near = gamma(together, t2)
+
+save "near" near
