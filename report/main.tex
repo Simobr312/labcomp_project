@@ -42,54 +42,6 @@
 
 \usepackage{listings}
 \usepackage{tcolorbox}
-\tcbuselibrary{listings, skins}
-
-% --- Modern Color Palette (One Dark Inspired) ---
-\definecolor{codebg}{RGB}{40, 44, 52}         % Dark background
-\definecolor{codeframe}{RGB}{24, 26, 31}      % Darker border
-\definecolor{keyword}{RGB}{198, 120, 221}     % Purple
-\definecolor{string}{RGB}{152, 195, 121}      % Green
-\definecolor{comment}{RGB}{92, 99, 112}       % Gray
-\definecolor{identifier}{RGB}{97, 175, 239}   % Blue
-\definecolor{number}{RGB}{209, 154, 102}      % Orange
-
-% Custom style for the listings engine
-\lstdefinestyle{modernpython}{
-    language=Python,
-    basicstyle=\ttfamily\small\color{white},  % White text for dark mode
-    keywordstyle=\color{keyword}\bfseries,
-    stringstyle=\color{string},
-    commentstyle=\color{comment}\itshape,
-    identifierstyle=\color{identifier},
-    numberstyle=\tiny\color{comment},
-    numbers=left,
-    numbersep=12pt,
-    breaklines=true,
-    showstringspaces=false,
-    upquote=true
-}
-
-% --- Custom tcolorbox wrapper to make it look like an IDE window ---
-\newtcblisting{codebox}[2][]{
-    colback=codebg,
-    colframe=codeframe,
-    arc=6pt,                           % Smooth rounded corners
-    boxrule=1.5pt,
-    listing only,
-    enhanced,
-    title={#2},                        % File/language header
-    coltitle=white,
-    fonttitle=\ttfamily\small\bfseries,
-    attach boxed title to top left={yshift=-2mm, xshift=4mm},
-    boxed title style={
-        colback=codeframe, 
-        arc=4pt, 
-        boxrule=0pt,
-        top=2pt, bottom=2pt, left=8pt, right=8pt
-    },
-    listing style=modernpython,
-    #1
-}
 
 \title{A Domain-Specific Language for Geometric Simplicial Complexes working with PolyLogicA}
 \author{Simone Riccio}
@@ -105,8 +57,7 @@
 
 \section{Introduction}
 
-Spatial logics are extensions of classical modal logic to reason rigorously about topological and geometrical properties of spaces. The VoxLogicA project provides a framework for spatial model checking, allowing users to verify properties of topological spaces represented as closure spaces. 
-
+Spatial logics are extensions of classical modal logic to reason rigorously about topological and geometrical properties of spaces. The VoxLogicA project~\cite{voxlogica} provides a framework for spatial model checking, allowing users to verify properties of topological spaces represented as closure spaces. Beyond theoretical explorations, spatial logics and spatial model checkers have found highly successful practical applications in computer vision, most notably in medical imaging analysis for brain tissue segmentation~\cite{brain-segmentation-aims}.
 Specifically, the PolyLogicA branch of VoxLogicA focuses on reasoning about posets. In this project, we present a DSL and web interface that allows users to define geometric simplicial complexes in the Euclidean plane, and then automatically generate the corresponding poset representation for use in PolyLogicA.
 
 The project introduces a novel Domain-Specific Language (DSL) and an interactive web interface, designed specifically for the generation and manipulation of geometric simplicial complexes. The proposed DSL can instantiate points, define simplices, and apply both geometric transformations (such as translation and scaling) and topological operations (such as boundaries and stars).
@@ -189,7 +140,7 @@ Broadly defined, a spatial logic is any formal language interpreted over a class
 
 The origin of this field lies in the topological approach to modal logic initiated by Alfred Tarski, who recognized that modal operators could represent topological notions such as interior and closure.
 
-Modern developments in spatial logic extend these ideas to discrete spatial structures (like graphs or images) using a generalized topological space called a \textbf{closure space} \cite{voxlogica}.
+Modern developments in spatial logic extend these ideas to discrete spatial structures (like graphs or images) using a generalized topological space called a closure space~\cite{closure-spaces-lmcs}.
 \begin{definition} [Closure Space]
     A closure space is a pair $(X, \mathcal{C})$ where $X$ is a set and $\mathcal{C}: \mathcal{P}(X) \to \mathcal{P}(X)$ is a closure operator satisfying the following properties for all $A, B \subseteq X$:
     \begin{enumerate}
@@ -214,8 +165,8 @@ Modern developments in spatial logic extend these ideas to discrete spatial stru
 \end{example}
 
 Ciancia et al. define a spatial logic for closure spaces for reasoning about spatial properties of closure spaces.
-\begin{definition} [Spatial Logic for Closure Spaces] \cite{voxlogica}
-    In a closure space $(X, \mathcal{C})$, the syntax of the spatial logic is defined as follows:
+\begin{definition} [Spatial Logic for Closure Spaces \cite{closure-spaces-lmcs}]
+    In a closure space (X, C), the syntax of the spatial logic is defined as follows:
     \[
     \phi ::= p \mid \neg \phi \mid \phi_1 \wedge \phi_2 \mid \mathcal{N} \phi \mid \phi_1 \mathcal{U} \phi_2
     \]
@@ -659,17 +610,35 @@ While the current implementation of the DSL establishes a foundational framework
 
 The most important improvement would be to extend the DSL to add properties to the simplices, allowing users to assign attributes such as color. This would enable more complex spatial reasoning, as the spatial logic could then be used to query and manipulate these properties. For example, one could define the properties "being red" and "being blue" and check whether all the red simplices are connected to the blue ones.
 
-Expanding the DSL or PolyLogicA to support algebraic topology concepts would actually be a significant enhancement. This would allow users to reason about holes, connected components, and other topological features of the simplicial complexes. For example, one could define the property "having a hole" and check properties like "all the red complexes have a hole" or "there is a blue complex that is connected to a red complex with a hole".
+Furthermore, another promising avenue for future research is to interface our simplicial representations with geometric model checking techniques designed specifically for continuous spaces~\cite{geometric-model-checking}. This integration would pave the way for bridging the gap between discrete, combinatorial simplicial complexes and the analytical properties of continuous geometric structures.
+
+Expanding the DSL or PolyLogicA to support algebraic topology concepts would actually be a significant enhancement. This would allow users to reason about holes, connected components, and other topological features of the simplicial complexes. For example, one could define the property ''having a hole'' and check properties like ''all the red complexes have a hole'' or ''there is a blue complex that is connected to a red complex with a hole''.
 
 \begin{thebibliography}{9}
     \bibitem{spatial-logic}
     Marco Aiello, Ian Pratt-Hartmann, and Johan van Benthem,
     \textit{Handbook of Spatial Logic},
     Springer, 2007.
-    
+
+    \bibitem{closure-spaces-lmcs}
+    Vincenzo Ciancia, Diego Latella, Michele Loreti, and Mieke Massink,
+    \textit{Model Checking Spatial Logics for Closure Spaces},
+    \textit{Logical Methods in Computer Science}, 12(4), 2016.
+
     \bibitem{voxlogica}
-    Vincenzo Ciancia et al.,
-    \textit{VoxLogicA: A Spatial Model Checker}.
+    Gina Belmonte, Vincenzo Ciancia, Diego Latella, and Mieke Massink,
+    \textit{VoxLogicA: A Spatial Model Checker for Declarative Image Analysis},
+    In \textit{International Conference on Tools and Algorithms for the Construction and Analysis of Systems} (TACAS), pp. 281--298, 2019.
+
+    \bibitem{geometric-model-checking}
+    Nick Bezhanishvili, Vincenzo Ciancia, David Gabelaia, Gianluca Grilletti, Diego Latella, and Mieke Massink,
+    \textit{Geometric Model Checking of Continuous Space},
+    \textit{Logical Methods in Computer Science}, 18(4), 2022.
+
+    \bibitem{brain-segmentation-aim}
+    Gina Belmonte, Vincenzo Ciancia, and Mieke Massink,
+    \textit{Symbolic and hybrid AI for brain tissue segmentation using spatial model checking},
+    \textit{Artificial Intelligence in Medicine}, 167: 103154, 2025.
 \end{thebibliography}
-    
+
 \end{document}
