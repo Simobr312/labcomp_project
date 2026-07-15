@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.10.18)  15 JUL 2026 12:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.10.18)  15 JUL 2026 12:43
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -899,19 +899,18 @@ Package microtype Info: Loading generic protrusion settings for font family
 File: lstlang1.sty 2023/02/27 1.9 listings language file
 )
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 253.
- [4{/usr/share/texmf/fonts/enc/dvips/lm/lm-ts1.enc}]
+ [4{/usr/share/texmf/fonts/enc/dvips/lm/lm-ts1.enc}] [5]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 302.
- [5]
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 304.
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 313.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 315.
  [6]
-Overfull \hbox (16.63327pt too wide) detected at line 365
+Overfull \hbox (16.63327pt too wide) detected at line 368
 \OML/lmm/m/it/10.95 @\OT1/lmr/m/n/10.95 (\OML/lmm/m/it/10.95 K\OT1/lmr/m/n/10.95 ) = \OMS/lmsy/m/n/10.95 f\OML/lmm/m/it/10.95 ^^[ \OMS/lmsy/m/n/10.95 2 \OML/lmm/m/it/10.95 K \OMS/lmsy/m/n/10.95 j []\OT1/lmr/m/n/10.95 (\OML/lmm/m/it/10.95 ^^[\OT1/lmr/m/n/10.95 ) \OML/lmm/m/it/10.95 < []\OT1/lmr/m/n/10.95 (\OML/lmm/m/it/10.95 K\OT1/lmr/m/n/10.95 )[]\OML/lmm/m/it/10.95 ^^[[]\OMS/lmsy/m/n/10.95 g\OML/lmm/m/it/10.95 :
  []
 
 [7]
-Overfull \hbox (11.00655pt too wide) in paragraph at lines 419--420
+Overfull \hbox (11.00655pt too wide) in paragraph at lines 423--424
 \T1/lmr/m/n/10.95 (-20) gen-er-ates all pos-si-ble sub-simplices (faces, edges, ver-tices) us-ing Python's \T1/lmtt/m/n/10.95 itertools.combinations\T1/lmr/m/n/10.95 (-20) . 
  []
 
@@ -919,60 +918,61 @@ Overfull \hbox (11.00655pt too wide) in paragraph at lines 419--420
 <webinterface/image.png, id=309, 1874.00125pt x 994.71625pt>
 File: webinterface/image.png Graphic file (type png)
 <use webinterface/image.png>
-Package pdftex.def Info: webinterface/image.png  used on input line 451.
+Package pdftex.def Info: webinterface/image.png  used on input line 455.
 (pdftex.def)             Requested size: 364.19667pt x 193.30864pt.
 <webinterface/query.png, id=310, 1874.00125pt x 994.71625pt>
 File: webinterface/query.png Graphic file (type png)
 <use webinterface/query.png>
-Package pdftex.def Info: webinterface/query.png  used on input line 462.
+Package pdftex.def Info: webinterface/query.png  used on input line 466.
 (pdftex.def)             Requested size: 364.19667pt x 193.30864pt.
- [9 <./webinterface/image.png> <./webinterface/query.png>]
-<3d/plain.png, id=319, 936.49875pt x 568.1225pt>
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[9 <./webinterface/image.png>]
+<3d/plain.png, id=324, 936.49875pt x 568.1225pt>
 File: 3d/plain.png Graphic file (type png)
 <use 3d/plain.png>
-Package pdftex.def Info: 3d/plain.png  used on input line 491.
+Package pdftex.def Info: 3d/plain.png  used on input line 495.
 (pdftex.def)             Requested size: 273.14923pt x 165.70486pt.
-<4d/image.png, id=320, 936.49875pt x 568.1225pt>
+ [10 <./webinterface/query.png> <./3d/plain.png>]
+<4d/image.png, id=342, 936.49875pt x 568.1225pt>
 File: 4d/image.png Graphic file (type png)
 <use 4d/image.png>
-Package pdftex.def Info: 4d/image.png  used on input line 513.
+Package pdftex.def Info: 4d/image.png  used on input line 519.
 (pdftex.def)             Requested size: 218.51521pt x 132.55522pt.
-<4d/image copy.png, id=321, 936.49875pt x 568.1225pt>
+<4d/image copy.png, id=343, 936.49875pt x 568.1225pt>
 File: 4d/image copy.png Graphic file (type png)
 <use 4d/image copy.png>
-Package pdftex.def Info: 4d/image copy.png  used on input line 519.
+Package pdftex.def Info: 4d/image copy.png  used on input line 525.
 (pdftex.def)             Requested size: 218.51521pt x 132.55522pt.
-
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-[10 <./3d/plain.png>]
-<example1/plain.png, id=355, 936.49875pt x 568.1225pt>
+<example1/plain.png, id=345, 936.49875pt x 568.1225pt>
 File: example1/plain.png Graphic file (type png)
 <use example1/plain.png>
-Package pdftex.def Info: example1/plain.png  used on input line 544.
-(pdftex.def)             Requested size: 273.14923pt x 165.70486pt.
- [11 <./4d/image.png> <./4d/image copy.png> <./example1/plain.png>]
-<example1/query2.png, id=381, 936.49875pt x 568.1225pt>
-File: example1/query2.png Graphic file (type png)
-<use example1/query2.png>
-Package pdftex.def Info: example1/query2.png  used on input line 567.
-(pdftex.def)             Requested size: 218.51521pt x 132.55522pt.
-<example1/query1.png, id=382, 936.49875pt x 568.1225pt>
-File: example1/query1.png Graphic file (type png)
-<use example1/query1.png>
-Package pdftex.def Info: example1/query1.png  used on input line 573.
-(pdftex.def)             Requested size: 218.51521pt x 132.55522pt.
-<example2/query1.png, id=384, 936.49875pt x 568.1225pt>
-File: example2/query1.png Graphic file (type png)
-<use example2/query1.png>
-Package pdftex.def Info: example2/query1.png  used on input line 602.
+Package pdftex.def Info: example1/plain.png  used on input line 550.
 (pdftex.def)             Requested size: 273.14923pt x 165.70486pt.
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[12 <./example1/query2.png> <./example1/query1.png>] [13 <./example2/query1.png>] [14] (./main.aux)
+[11 <./4d/image.png> <./4d/image copy.png>]
+<example1/query2.png, id=380, 936.49875pt x 568.1225pt>
+File: example1/query2.png Graphic file (type png)
+<use example1/query2.png>
+Package pdftex.def Info: example1/query2.png  used on input line 573.
+(pdftex.def)             Requested size: 218.51521pt x 132.55522pt.
+<example1/query1.png, id=381, 936.49875pt x 568.1225pt>
+File: example1/query1.png Graphic file (type png)
+<use example1/query1.png>
+Package pdftex.def Info: example1/query1.png  used on input line 579.
+(pdftex.def)             Requested size: 218.51521pt x 132.55522pt.
+ [12 <./example1/plain.png> <./example1/query2.png> <./example1/query1.png>]
+<example2/query1.png, id=415, 936.49875pt x 568.1225pt>
+File: example2/query1.png Graphic file (type png)
+<use example2/query1.png>
+Package pdftex.def Info: example2/query1.png  used on input line 607.
+(pdftex.def)             Requested size: 273.14923pt x 165.70486pt.
+ [13 <./example2/query1.png>] [14] (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
@@ -981,18 +981,18 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: FF507C386B6203DF427F48FB8B4B741A;3547.
  ) 
 Here is how much of TeX's memory you used:
- 34916 strings out of 474222
- 687544 string characters out of 5748732
- 2289975 words of memory out of 5000000
+ 34915 strings out of 474222
+ 687529 string characters out of 5748732
+ 2288975 words of memory out of 5000000
  56163 multiletter control sequences out of 15000+600000
  638173 words of font info for 177 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  84i,8n,96p,1033b,2198s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmex10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm/lmr6.pfb></usr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on main.pdf (14 pages, 903773 bytes).
+Output written on main.pdf (14 pages, 903929 bytes).
 PDF statistics:
- 588 PDF objects out of 1000 (max. 8388607)
- 489 compressed objects within 5 object streams
- 253 named destinations out of 1000 (max. 500000)
+ 585 PDF objects out of 1000 (max. 8388607)
+ 486 compressed objects within 5 object streams
+ 252 named destinations out of 1000 (max. 500000)
  45943 words of extra memory for PDF output out of 51595 (max. 10000000)
 

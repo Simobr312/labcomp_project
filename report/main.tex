@@ -298,6 +298,8 @@ The syntax of the DSL is designed for defining geometric simplicial complexes in
 
 To parse this grammar, we use the Lark parser library in Python in the file \texttt{dsl\_parser.py}. The parser generates an abstract syntax tree (AST) that represents the structure of the input program. The AST is then traversed to evaluate the expressions and construct the corresponding geometric simplicial complex.
 
+\newpage
+
 \begin{itemize}
     \item \textbf{Point Declarations (\texttt{PointDecl})}: Instantiates a coordinates in $\mathbb{R}^n$ as tuples of numbers.
     \item \textbf{Complex Declarations (\texttt{ComplexDecl})}: Instantiates a simplicial complex from a list of vertices or through operations.
@@ -349,6 +351,7 @@ The language supports a set of operations that can be applied to geometric simpl
 The semantics of these operations are defined in terms of the underlying geometric representation, therefore we will not go into the details making the assumption that the reader is familiar with basic geometric operations.
 
 There are also some other operations which may have more complex semantics, such as:
+
 \begin{lstlisting}[language=Python,caption={Topological Operations},label={lst:top-ops}]
     def boundary(complex: Complex) -> Complex:
         """Returns the boundary of the complex"""
@@ -389,6 +392,9 @@ The execution pipeline of the DSL consists of three main phases: parsing the sou
 To guarantee mathematical correctness, especially regarding the properties of simplicial complexes (where the order of vertices does not matter and duplicates are not allowed), we leverage Python's native data structures.
 
 In \texttt{core.py}, a \texttt{Point} is defined as a dataclass, ensuring it is hashable. A \texttt{Complex} is represented as a Python \texttt{Set} of \texttt{FrozenSet}s of Points:
+
+This specific formulation guarantees that operations like union and intersection can directly leverage highly optimized set-theoretic operations at the Python interpreter level.
+
 \begin{lstlisting}[language=Python, caption={Core Geometric Data Structures}, label={lst:core_structs}]
 @dataclass(frozen=True)
 class Point:
@@ -398,8 +404,6 @@ class Point:
 class Complex:
     simplices: Set[FrozenSet[Point]]
 \end{lstlisting}
-This specific formulation guarantees that operations like union and intersection can directly leverage highly optimized set-theoretic operations at the Python interpreter level.
-
 \subsection{AST Evaluation and Control Flow}
 The evaluator traverses the AST nodes defined in \texttt{parser.py} (e.g., \texttt{PointDecl}, \texttt{ComplexDecl}, \texttt{FuncCall}) and recursively resolves them against the active \texttt{Environment}.
 
@@ -492,6 +496,8 @@ complex shifted_boundary = clone_and_shift(tetra_boundary, 3, 8, 0, 2)
     \caption{Web Interface for Visualizing 3D Simplicial Complexes}
     \label{fig:web-interface-3d}
 \end{figure}
+
+\newpage 
 
 Furthermore, despite not being able to visualize higher-dimensional simplicial complexes, we can still define them using the DSL and export them to PolyLogicA for spatial logic reasoning. For example, we can define a 4D simplex as follows:
 \begin{lstlisting}[language=Python, caption={DSL Code for 4D Simplicial Complex}, label={lst:4ddsl}]
@@ -592,7 +598,6 @@ function shift(dx, dy) {
 complex t2 = shift(10, 0)
 complex t3 = shift(20, 0)
 complex t4 = shift(10, 15)
-
 complex together = union(t1, union(t2, union(t3, t4)))
     \end{lstlisting}
 
@@ -628,6 +633,9 @@ save "near" near
 I also implemented the currying of functions, which allows for more expressive definitions.
 
 For example, I can define a function that takes an angle and returns a function that takes a complex and rotates it by that angle:
+
+\newpage
+
     \begin{lstlisting}[language=Python, caption={DSL Code for Example 3}, label={lst:example3dsl}]
 function rotate_by(angle) {
     function rotate_complex(complex) {
