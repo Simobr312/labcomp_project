@@ -33,7 +33,6 @@ def _build_downward_closure(complexes: ComplexEnv) -> tuple[list[frozenset], dic
     simplex_to_id = {simp: str(idx) for idx, simp in enumerate(sorted_simplices)}
     return sorted_simplices, simplex_to_id, simplex_atoms
 
-
 def serialize_environment(env: ComplexEnv) -> dict[str, Any]:
     """Converts the active environment to JSON, respecting explicit render primitives."""
     # 1. Generate IDs using the ENTIRE environment so they match PolyLogicA's Poset exactly
@@ -48,10 +47,10 @@ def serialize_environment(env: ComplexEnv) -> dict[str, Any]:
         verts = list(val.vertices)
         pt_to_id = {pt: f"v{i}" for i, pt in enumerate(verts)}
         
-        # Format coordinate map
+        # Format coordinate map - UPDATED HERE
         coords_dict = {
             pt_to_id[pt]: {
-                "coords": [pt.x, pt.y],
+                "coords": list(pt.coords), # Dynamically captures all dimensions
                 "id": simplex_to_id[frozenset([pt])]
             }
             for pt in verts

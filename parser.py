@@ -8,7 +8,6 @@ defined_operations = {"translate", "rotate", "scale", "dim", "num_vert", "union"
 op_regex = "|".join(defined_operations)
 
 # Parser grammar
-# We updated func_call to: expr "(" call_args ")"
 grammar = fr"""
     program: statement*
 
@@ -37,14 +36,15 @@ grammar = fr"""
     op_call: OP "(" arg_list? ")"
     func_call: expr "(" call_args ")" 
     
-    tuple_coord: "(" expr "," expr ")"
+    tuple_coord: "(" expr ("," expr)+ ")"
     vertices_list: "[" id_list "]"
     id_list: IDENT ("," IDENT)*
     arg_list: expr ("," expr)*
     param_list: (IDENT ("," IDENT)*)?
     call_args: (expr ("," expr)*)?
 
-    OP.2: /{op_regex}/
+    OP: /\b{op_regex}\b/
+
     IDENT: /[A-Za-z_][A-Za-z0-9_]*/
     
     NUMBER: /-?[0-9]+(\.[0-9]+)?/
@@ -64,8 +64,7 @@ class NumberLiteral:
 
 @dataclass
 class PointLiteral:
-    x: Expr
-    y: Expr
+    coords: List[Expr]
 
 @dataclass
 class ComplexLiteral:
@@ -87,8 +86,7 @@ Expr = Ref | PointLiteral | ComplexLiteral | OpCall | FuncCall | NumberLiteral
 @dataclass
 class PointDecl:
     name: str
-    x: Expr
-    y: Expr
+    coords: List[Expr]
 
 @dataclass
 class ComplexDecl:
@@ -120,9 +118,9 @@ Program = List[Statement]
 # == Tree Transformers == #
 def transform_expr_tree(tree) -> Expr:
     match tree:
-        case Tree("tuple_coord", [x, y]):
-            return PointLiteral(transform_expr_tree(x), transform_expr_tree(y))
-
+        case Tree("tuple_coord", coords):
+            return PointLiteral([transform_expr_tree(c) for c in coords])
+        
         case Tree("vertices_list", [id_list]):
             children = id_list.children if isinstance(id_list, Tree) else id_list
             return ComplexLiteral([tok.value for tok in children])
@@ -157,8 +155,8 @@ def transform_expr_tree(tree) -> Expr:
         
 def transform_statement_tree(tree) -> Statement:
     match tree:
-        case Tree("point_decl", [Token("IDENT", name), Tree("tuple_coord", [x, y])]):
-            return PointDecl(name, transform_expr_tree(x), transform_expr_tree(y))
+        case Tree("point_decl", [Token("IDENT", name), Tree("tuple_coord", coords)]):
+            return PointDecl(name, [transform_expr_tree(c) for c in coords])
 
         case Tree("complex_decl", [Token("IDENT", name), expr]):
             return ComplexDecl(name, transform_expr_tree(expr))

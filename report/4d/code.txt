@@ -1,0 +1,10 @@
+point A = (0, 0, 0, 0)
+point B = (2, 0, 0, 0)
+point C = (1, 1.732, 0, 0)
+point D = (1, 0.577, 1.633, 0)
+point E = (1, 0.577, 0.408, 1.414)
+
+complex pentachoron = scale([A, B, C, D, E], 7)
+
+complex bound = boundary(boundary(pentachoron))
+render bound

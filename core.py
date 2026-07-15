@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ast import expr
 import math
 import itertools
 from typing import Any, List, Dict, Callable, Tuple, Type, Set, FrozenSet, Union
@@ -11,8 +12,15 @@ from parser import NumberLiteral, Statement, PointDecl, ComplexDecl, Assign, Exp
 # == Core Geometric Data Structures == #
 @dataclass(frozen=True)
 class Point:
-    x: float
-    y: float
+    coords: Tuple[float, ...]
+
+    @property
+    def x(self) -> float:
+        return self.coords[0] if len(self.coords) > 0 else 0.0
+
+    @property
+    def y(self) -> float:
+        return self.coords[1] if len(self.coords) > 1 else 0.0
 
 @dataclass
 class Complex:
@@ -81,47 +89,48 @@ class ObservationalOperator(Operator):
 
 # == Primitive Geometric Implementations == #
 def translate_impl(target: Geometric, offset: Point) -> Geometric:
+    def trans_pt(p: Point) -> Point:
+        # zip_longest handles dimension mismatches by padding with 0.0
+        new_coords = tuple(a + b for a, b in itertools.zip_longest(p.coords, offset.coords, fillvalue=0.0))
+        return Point(new_coords)
+
     if isinstance(target, Point):
-        return Point(target.x + offset.x, target.y + offset.y)
+        return trans_pt(target)
     elif isinstance(target, Complex):
-        new_simplices = set()
-        for simplex in target.simplices:
-            new_simplex = frozenset(Point(p.x + offset.x, p.y + offset.y) for p in simplex)
-            new_simplices.add(new_simplex)
+        new_simplices = {frozenset(trans_pt(p) for p in simplex) for simplex in target.simplices}
         return Complex(new_simplices)
     raise TypeError("translate target must be a Point or Complex")
 
 def scale_impl(target: Geometric, factor: Union[int, float]) -> Union[Point, Complex]:
     s = float(factor)
+    def scale_pt(p: Point) -> Point:
+        return Point(tuple(c * s for c in p.coords))
+
     if isinstance(target, Point):
-        return Point(target.x * s, target.y * s)
+        return scale_pt(target)
     elif isinstance(target, Complex):
-        new_simplices = set()
-        for simplex in target.simplices:
-            new_simplex = frozenset(Point(p.x * s, p.y * s) for p in simplex)
-            new_simplices.add(new_simplex)
+        new_simplices = {frozenset(scale_pt(p) for p in simplex) for simplex in target.simplices}
         return Complex(new_simplices)
     raise TypeError("scale target must be a Point or Complex")
 
 def rotate_impl(target: Geometric, angle: Num | Point) -> Geometric:
-    deg = float(angle.x if isinstance(angle, Point) else angle)
+    deg = float(angle.coords[0] if isinstance(angle, Point) else angle)
     rad = math.radians(deg)
     cos_a = math.cos(rad)
     sin_a = math.sin(rad)
     
     def rot_pt(p: Point) -> Point:
-        return Point(
-            round(p.x * cos_a - p.y * sin_a, 6),
-            round(p.x * sin_a + p.y * cos_a, 6)
-        )
+        if len(p.coords) < 2:
+            return p # Cannot rotate 1D points
+            
+        new_x = round(p.coords[0] * cos_a - p.coords[1] * sin_a, 6)
+        new_y = round(p.coords[0] * sin_a + p.coords[1] * cos_a, 6)
+        return Point((new_x, new_y) + p.coords[2:])
 
     if isinstance(target, Point):
         return rot_pt(target)
     elif isinstance(target, Complex):
-        new_simplices = set()
-        for simplex in target.simplices:
-            new_simplex = frozenset(rot_pt(p) for p in simplex)
-            new_simplices.add(new_simplex)
+        new_simplices = {frozenset(rot_pt(p) for p in simplex) for simplex in target.simplices}
         return Complex(new_simplices)
     raise TypeError("rotate target must be a Point or Complex")
 
@@ -177,17 +186,14 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
 
     if isinstance(expr, str):
         val = lookup(env, expr)
-        if isinstance(val, Operator):
-            raise ValueError(f"Identifier '{expr}' references a system operator, not a value.")
         return val
 
     if isinstance(expr, PointLiteral):
-        x_val = evaluate_expr(expr.x, env)
-        y_val = evaluate_expr(expr.y, env)
-        if not isinstance(x_val, (int, float)) or not isinstance(y_val, (int, float)):
+        eval_coords = [evaluate_expr(c, env) for c in expr.coords]
+        if not all(isinstance(c, (int, float)) for c in eval_coords):
             raise TypeError("Point coordinates must evaluate to numeric values.")
-        return Point(float(x_val), float(y_val))
-    
+        return Point(tuple(float(c) for c in eval_coords))
+
     if isinstance(expr, NumberLiteral):
         return expr.value
 
@@ -215,23 +221,28 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
         return op.apply(arg_vals)
 
     if isinstance(expr, FuncCall):
-        # 1. Dynamically evaluate the caller to get the closure
-        closure = evaluate_expr(expr.caller, env)
-        if not isinstance(closure, Closure):
+        # 1. Dynamically evaluate the caller to get the callable object
+        callable_obj = evaluate_expr(expr.caller, env)
+        
+        # Support calling system operators via FuncCall syntax as well
+        if isinstance(callable_obj, Operator):
+            arg_vals = [evaluate_expr(arg, env) for arg in expr.args]
+            return callable_obj.apply(arg_vals)
+            
+        if not isinstance(callable_obj, Closure):
             raise ValueError(f"Expression is not a callable function.")
             
         arg_vals = [evaluate_expr(arg, env) for arg in expr.args]
-        if len(arg_vals) != len(closure.function.params):
-            raise ValueError(f"Function '{closure.function.name}' expects {len(closure.function.params)} arguments, got {len(arg_vals)}")
+        if len(arg_vals) != len(callable_obj.function.params):
+            raise ValueError(f"Function '{callable_obj.function.name}' expects {len(callable_obj.function.params)} arguments, got {len(arg_vals)}")
             
-        local_env = closure.env
-        # 2. Use the function's internal name for recursive bindings 
-        local_env = bind(local_env, closure.function.name, closure)
-        for param, val in zip(closure.function.params, arg_vals):
+        local_env = callable_obj.env
+        local_env = bind(local_env, callable_obj.function.name, callable_obj)
+        for param, val in zip(callable_obj.function.params, arg_vals):
             local_env = bind(local_env, param, val)
             
         try:
-            for body_stmt in closure.function.body:
+            for body_stmt in callable_obj.function.body:
                 local_env = execute_statement(body_stmt, local_env)
             return None
         except ReturnException as e:
@@ -241,13 +252,12 @@ def evaluate_expr(expr: Expr, env: Environment) -> EVal:
 
 def execute_statement(stmt: Statement, env: Environment) -> Environment:
     match stmt:
-        case PointDecl(name, x, y):
-            x_val = evaluate_expr(x, env)
-            y_val = evaluate_expr(y, env)
-            if not isinstance(x_val, (int, float)) or not isinstance(y_val, (int, float)):
+        case PointDecl(name, coords):
+            eval_coords = [evaluate_expr(c, env) for c in coords]
+            if not all(isinstance(c, (int, float)) for c in eval_coords):
                 raise TypeError("Point coordinates must evaluate to numeric values.")
-            return bind(env, name, Point(float(x_val), float(y_val)))
-
+            return bind(env, name, Point(tuple(float(c) for c in eval_coords)))
+        
         case ComplexDecl(name, expr):
             val = evaluate_expr(expr, env)
             if not isinstance(val, Complex):
