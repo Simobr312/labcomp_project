@@ -289,14 +289,15 @@ The syntax of the DSL is designed for defining geometric simplicial complexes in
     op_call: OP "(" arg_list? ")"
     func_call: expr "(" call_args ")" 
     
-    tuple_coord: "(" expr "," expr ")"
+    tuple_coord: "(" expr ("," expr)+ ")"
     vertices_list: "[" id_list "]"
     id_list: IDENT ("," IDENT)*
     arg_list: expr ("," expr)*
     param_list: (IDENT ("," IDENT)*)?
     call_args: (expr ("," expr)*)?
 
-    OP.2: /{op_regex}/
+    OP: /\b{op_regex}\b/
+
     IDENT: /[A-Za-z_][A-Za-z0-9_]*/
     
     NUMBER: /-?[0-9]+(\.[0-9]+)?/
@@ -310,7 +311,7 @@ The syntax of the DSL is designed for defining geometric simplicial complexes in
 To parse this grammar, we use the Lark parser library in Python in the file \texttt{dsl\_parser.py}. The parser generates an abstract syntax tree (AST) that represents the structure of the input program. The AST is then traversed to evaluate the expressions and construct the corresponding geometric simplicial complex.
 
 \begin{itemize}
-    \item \textbf{Point Declarations (\texttt{PointDecl})}: Instantiates a coordinate pair $(x, y)$ in $\mathbb{R}^2$.
+    \item \textbf{Point Declarations (\texttt{PointDecl})}: Instantiates a coordinates in $\mathbb{R}^n$ as tuples of numbers.
     \item \textbf{Complex Declarations (\texttt{ComplexDecl})}: Instantiates a simplicial complex from a list of vertices or through operations.
     \item \textbf{Render Statements (\texttt{RenderStmt})}: Registers a target complex to be exported and visualized by the web interface.
     \item \textbf{Function Definitions (\texttt{FunctionDecl})}: Standard functional structures that yield runtime closures to enable procedural abstraction.
@@ -403,8 +404,7 @@ In \texttt{core.py}, a \texttt{Point} is defined as a dataclass, ensuring it is 
 \begin{lstlisting}[language=Python, caption={Core Geometric Data Structures}, label={lst:core_structs}]
 @dataclass(frozen=True)
 class Point:
-    x: float
-    y: float
+    coords: Tuple[float, ...]
 
 @dataclass
 class Complex:
@@ -476,6 +476,63 @@ In the bottom right corner there are the results of the spatial logic queries, w
     \label{fig:web-interface-query}
 \end{figure}
 
+\subsection{3D and higher-dimensional}
+
+We can define also 3D simplicial complexes using the DSL, and the web interface will render them in 3D.
+The code is similar and intuitive, for example:
+\begin{lstlisting}[language=Python, caption={DSL Code for 3D Simplicial Complex}, label={lst:3ddsl}]
+point A = (0, 0, 0)
+point B = (2, 0, 0)
+point C = (1, 1.732, 0)
+point D = (1, 0.577, 1.633)
+complex tetrahedron = [A, B, C, D]
+
+function clone_and_shift(target, factor, dx, dy, dz) {
+    temp = scale(target, factor)
+    shifted_result = translate(temp, (dx, dy, dz))
+    return shifted_result
+}
+
+complex shifted_tetra = clone_and_shift(tetrahedron, 1.5, 4, 0, 1)
+complex tetra_boundary = boundary(tetrahedron)
+complex shifted_boundary = clone_and_shift(tetra_boundary, 3, 8, 0, 2)
+\end{lstlisting}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{3d/plain.png}
+    \caption{Web Interface for Visualizing 3D Simplicial Complexes}
+    \label{fig:web-interface-3d}
+\end{figure}
+
+Furthermore, despite not being able to visualize higher-dimensional simplicial complexes, we can still define them using the DSL and export them to PolyLogicA for spatial logic reasoning. For example, we can define a 4D simplex as follows:
+\begin{lstlisting}[language=Python, caption={DSL Code for 4D Simplicial Complex}, label={lst:4ddsl}]
+point A = (0, 0, 0, 0)
+point B = (2, 0, 0, 0)
+point C = (1, 1.732, 0, 0)
+point D = (1, 0.577, 1.633, 0)
+point E = (1, 0.577, 0.408, 1.414)
+
+complex pentachoron = scale([A, B, C, D, E], 7)
+complex bound = boundary(boundary(pentachoron))
+render bound
+\end{lstlisting}
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{4d/image.png}
+        \caption{Pentachoron boundary}
+        \label{fig:4d-boundary}
+    \end{minipage}\hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{4d/image copy.png}
+        \caption{Boundary of Pentachoron boundary}
+        \label{fig:4d-boundaryboundary}
+    \end{minipage}
+\end{figure}
 
 \section{Examples and Model Checking}
 
@@ -561,7 +618,7 @@ The resulting complex is shown in Figure \ref{fig:example2}. It consists of four
 
 And we can apply spatial logic queries to this complex to check for connected components by using the $\gamma$ operator, which computes the closure of a complex with respect to another complex. For example, we can check if $together$ is connected to $t2$ by computing the closure of $together$ with respect to $t2$:
     \begin{lstlisting}[language=Python, caption={Query for Example 2}, label={lst:example2query}]
-        let t1 = ap("t1")
+let t1 = ap("t1")
 let t2 = ap("t2")
 let t3 = ap("t3")
 let t4 = ap("t4")
@@ -576,6 +633,7 @@ save "near" near
 \begin{remark}
     In this project I am treating the geometric simplicial complexes as formulas. In a future version of the DSL, I would like to treat them only as models that can have different assigned properties (for example, color or other attributes) and then use the spatial logic to reason about these properties. This would allow for a more expressive and flexible DSL, where the user can define complex spatial relationships and properties, and then use the spatial logic to reason about them.
 \end{remark}
+
 
 \subsection{Currying of Functions}
 
@@ -600,8 +658,6 @@ complex t2 = rotate_by(90)(t1)
 While the current implementation of the DSL establishes a foundational framework for intuitively defining and manipulating geometrical objects, there are several avenues for future enhancement.
 
 The most important improvement would be to extend the DSL to add properties to the simplices, allowing users to assign attributes such as color. This would enable more complex spatial reasoning, as the spatial logic could then be used to query and manipulate these properties. For example, one could define the properties "being red" and "being blue" and check whether all the red simplices are connected to the blue ones.
-
-The most immediate improvement would be to extend the DSL syntax to support 3D simplicial complexes, allowing users to define and manipulate tetrahedra and other higher-dimensional simplices. This would not be difficult because the core data structures and operations are already defined in a dimension-agnostic way, and the web interface is already using Three.js, which supports 3D rendering. It just needs a few changes to the grammar and the operations to support 3D coordinates.
 
 Expanding the DSL or PolyLogicA to support algebraic topology concepts would actually be a significant enhancement. This would allow users to reason about holes, connected components, and other topological features of the simplicial complexes. For example, one could define the property "having a hole" and check properties like "all the red complexes have a hole" or "there is a blue complex that is connected to a red complex with a hole".
 
