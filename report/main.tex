@@ -17,31 +17,68 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows, positioning}
 
+% --- Micro-tipografia e Font ---
+\usepackage{lmodern}
+\usepackage{microtype}        
+
+\usepackage{xcolor}
+\definecolor{brandblue}{rgb}{0.1, 0.3, 0.6}
+\definecolor{codegray}{rgb}{0.95, 0.95, 0.95}
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=brandblue,
+    citecolor=brandblue,
+    urlcolor=brandblue,
+    pdftitle={A DSL for Geometric Simplicial Complexes},
+    pdfauthor={Simone Riccio}
+}
 \geometry{margin=2.5cm}
+
+\usepackage[most]{tcolorbox}
+\usepackage{amsthm}
+
+% Stile personalizzato per i teoremi/definizioni
+\newtcbtheorem[number within=section]{mydef}{Definizione}{
+    colback=brandblue!5, 
+    colframe=brandblue, 
+    fonttitle=\bfseries,
+    boxrule=0.5pt,
+    leftrule=3pt, % Linea spessa solo a sinistra
+    arc=2pt,
+    sharp corners=northeast
+}{def}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{definition}{Definition}
 \newtheorem{remark}{Remark}
 \newtheorem{example}{Example}
 
-% --- Custom Code Style ---
-\lstset{
-    basicstyle=\ttfamily\small,
-    breaklines=true,
-    frame=single,
-    backgroundcolor=\color{gray!5},
-    keywordstyle=\color{blue},
-    commentstyle=\color{green!60!black},
-    stringstyle=\color{purple}
+\usepackage{listings}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{codegray},   % Sfondo grigio chiaro
+    basicstyle=\ttfamily\small,          % Font monospace leggibile
+    breakatwhitespace=false,         
+    breaklines=true,                     % Va a capo automaticamente
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                        % Numeri di riga a sinistra
+    numbersep=5pt,                  
+    numberstyle=\tiny\color{gray},
+    frame=single,                        % Cornice sottile intorno al codice
+    rulecolor=\color{gray!30},
+    tabsize=2
 }
+\lstset{style=mystyle}
+
+\usepackage{dirtree}
 
 % --- Macros ---
 \newcommand{\R}{\mathbb{R}}
 
 \newcommand{\commentforimage}[1]{\text{\color{red} [Image Placeholder]: #1}}
-
-\usepackage{listings}
-\usepackage{tcolorbox}
 
 \title{A Domain-Specific Language for Geometric Simplicial Complexes working with PolyLogicA}
 \author{Simone Riccio}
@@ -57,7 +94,8 @@
 
 \section{Introduction}
 
-Spatial logics are extensions of classical modal logic to reason rigorously about topological and geometrical properties of spaces. The VoxLogicA project~\cite{voxlogica} provides a framework for spatial model checking, allowing users to verify properties of topological spaces represented as closure spaces. Beyond theoretical explorations, spatial logics and spatial model checkers have found highly successful practical applications in computer vision, most notably in medical imaging analysis for brain tissue segmentation~\cite{brain-segmentation-aims}.
+Spatial logics are extensions of classical modal logic to reason rigorously about topological and geometrical properties of spaces. The VoxLogicA project~\cite{voxlogica} provides a framework for spatial model checking, allowing users to verify properties of topological spaces represented as closure spaces. Beyond theoretical explorations, spatial logics and spatial model checkers have found highly successful practical applications in computer vision, most notably in medical imaging analysis for brain tissue segmentation~\cite{belmonte2025symbolic}.
+
 Specifically, the PolyLogicA branch of VoxLogicA focuses on reasoning about posets. In this project, we present a DSL and web interface that allows users to define geometric simplicial complexes in the Euclidean plane, and then automatically generate the corresponding poset representation for use in PolyLogicA.
 
 The project introduces a novel Domain-Specific Language (DSL) and an interactive web interface, designed specifically for the generation and manipulation of geometric simplicial complexes. The proposed DSL can instantiate points, define simplices, and apply both geometric transformations (such as translation and scaling) and topological operations (such as boundaries and stars).
@@ -73,9 +111,9 @@ The remainder of this report is structured as follows: Section 2 provides the th
 \subsection{Geometry and Simplicial Complexes}
 
 \begin{definition} [Simplex]
-    Given a set of $k+1$ affinely independent points in $\R$ denoted as $\left\{v_0, v_1, \ldots, v_k \right\}$, the $k$-simplex $\sigma$ spanned by these points is defined as the convex hull:
+    Given a set of $k+1$ affinely independent points in $\R^n$ denoted as $\left\{v_0, v_1, \ldots, v_k \right\}$, the $k$-simplex $\sigma$ spanned by these points is defined as the convex hull:
     \[
-    \sigma = \left[v_0, v_1, \ldots, v_k\right] = \left\{ \sum_{i=0}^{k} \lambda_i v_i \mid \lambda_i \geq 0, \sum_{i=0}^{k} \lambda_i = 1 \right\}.
+    \sigma = \left[v_0, v_1, \ldots, v_k\right] = \left\{ \sum \lambda_i v_i \mid \lambda_i \ge 0 \right\}
     \]
 \end{definition}
 
@@ -105,7 +143,7 @@ The remainder of this report is structured as follows: Section 2 provides the th
 \begin{definition} [Dimension]
     The dimension of a simplex $\sigma = \left[v_0, v_1, \ldots, v_k\right]$ is defined as $k$. The dimension of a simplicial complex $K$ is the maximum dimension of its simplices:
     \[
-    \dim(K) = \max\{\dim(\sigma) \mid \sigma \in K\}.
+    \left\{ \sum \lambda_i v_i \mid \lambda_i \ge 0 \right\}.
     \]
 \end{definition}
 
@@ -195,20 +233,19 @@ The DSL is designed to be a simple and expressive language for defining geometri
 
 They are implemented in the following files:
 
-\begin{lstlisting}[caption={Project directory tree},label={lst:dir-tree}]
-project-root/
-|-- report/
-|   `-- main.tex
-|-- src/
-|   |-- parser.py
-|   |-- core.py
-|   `-- exporter.py
-|-- web/
-|   |-- index.html
-|   |-- render.js
-    `-- visualization.js
-`-- README.md
-\end{lstlisting}
+\dirtree{%
+.1 project-root/.
+.2 report/.
+.3 main.tex.
+.2 src/.
+.3 parser.py.
+.3 core.py.
+.3 exporter.py.
+.2 web/.
+.3 index.html.
+.3 render.js.
+.3 visualization.js.
+}
 
 \subsection{Syntax}
 The syntax of the DSL is designed for defining geometric simplicial complexes in a concise manner. The language allows users to specify vertices, simplices, and operations on them.
@@ -608,7 +645,7 @@ complex t2 = rotate_by(90)(t1)
 
 While the current implementation of the DSL establishes a foundational framework for intuitively defining and manipulating geometrical objects, there are several avenues for future enhancement.
 
-The most important improvement would be to extend the DSL to add properties to the simplices, allowing users to assign attributes such as color. This would enable more complex spatial reasoning, as the spatial logic could then be used to query and manipulate these properties. For example, one could define the properties "being red" and "being blue" and check whether all the red simplices are connected to the blue ones.
+The most important improvement would be to extend the DSL to add properties to the simplices, allowing users to assign attributes such as color. This would enable more complex spatial reasoning, as the spatial logic could then be used to query and manipulate these properties. For example, one could define the properties ''being red'' and ''being blue'' and check whether all the red simplices are connected to the blue ones.
 
 Furthermore, another promising avenue for future research is to interface our simplicial representations with geometric model checking techniques designed specifically for continuous spaces~\cite{geometric-model-checking}. This integration would pave the way for bridging the gap between discrete, combinatorial simplicial complexes and the analytical properties of continuous geometric structures.
 
@@ -635,7 +672,7 @@ Expanding the DSL or PolyLogicA to support algebraic topology concepts would act
     \textit{Geometric Model Checking of Continuous Space},
     \textit{Logical Methods in Computer Science}, 18(4), 2022.
 
-    \bibitem{brain-segmentation-aim}
+    \bibitem{belmonte2025symbolic}
     Gina Belmonte, Vincenzo Ciancia, and Mieke Massink,
     \textit{Symbolic and hybrid AI for brain tissue segmentation using spatial model checking},
     \textit{Artificial Intelligence in Medicine}, 167: 103154, 2025.
