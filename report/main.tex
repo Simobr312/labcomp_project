@@ -389,7 +389,7 @@ To guarantee mathematical correctness, especially regarding the properties of si
 
 In \texttt{core.py}, a \texttt{Point} is defined as a dataclass, ensuring it is hashable. A \texttt{Complex} is represented as a Python \texttt{Set} of \texttt{FrozenSet}s of Points.
 
-This specific formulation guarantees that operations like union and intersection can directly leverage highly optimized set-theoretic operations at the Python interpreter level.
+This specific formulation guarantees that operations like union and intersection can directly leverage highly optimized set-theoretic operations at the Python interpreter level (\ref{lst:core_structs}).
 
 \begin{lstlisting}[language=Python, caption={Core Geometric Data Structures}, label={lst:core_structs}]
 @dataclass(frozen=True)
@@ -403,7 +403,7 @@ class Complex:
 \subsection{AST Evaluation and Control Flow}
 The evaluator traverses the AST nodes defined in \texttt{parser.py} (e.g., \texttt{PointDecl}, \texttt{ComplexDecl}, \texttt{FuncCall}) and recursively resolves them against the active \texttt{Environment}.
 
-A notable implementation detail is the handling of function calls and lexical closures. When a \texttt{FunctionDecl} is evaluated, it is packed into a \texttt{Closure} object that captures the current environment. To manage control flow—specifically early exits via \texttt{return} statements inside function bodies—we utilize a custom exception mechanism:
+A notable implementation detail is the handling of function calls and lexical closures. When a \texttt{FunctionDecl} is evaluated, it is packed into a \texttt{Closure} object that captures the current environment. To manage control flow—specifically early exits via \texttt{return} statements inside function bodies—we utilize a custom exception mechanism(\ref{lst:return_exception}):
 \begin{lstlisting}[language=Python, caption={Exception-based Control Flow for Returns}, label={lst:return_exception}]
 class ReturnException(Exception):
     def __init__(self, value: EVal):
@@ -416,9 +416,9 @@ When the evaluator encounters a \texttt{ReturnStmt}, it raises a \texttt{ReturnE
 
 The transition from continuous geometric representations to discrete logical structures occurs in the \texttt{export.py} module. PolyLogicA requires topological spaces to be represented as Hasse diagrams (posets) of closure spaces. 
 
-To achieve this, we used a \texttt{\_build\_downward\_closure} algorithm. For every complex marked by a \texttt{render\_targets} directive, the algorithm extracts all maximal simplices and systematically generates all possible sub-simplices (faces, edges, vertices) using Python's \texttt{itertools.combinations}. 
+To achieve this, we used a \texttt{\_build\_downward\_closure} algorithm. For every complex marked by a \texttt{render\_targets} directive, the algorithm extracts all maximal simplices and systematically generates all possible sub-simplices using Python's \texttt{itertools.combinations} (\ref{lst:downward_closure}). 
 
-\begin{lstlisting}[language=Python, caption={Downward Closure Generation}]
+\begin{lstlisting}[language=Python, caption={Downward Closure Generation}, label = {lst:downward_closure}]
 def _build_downward_closure(complexes: ComplexEnv) -> tuple[list[frozenset], dict[frozenset, str], dict[frozenset, set[str]]]:
     """Generates all sub-simplices, assigning unique string IDs and tracking their source variable atoms."""
 
@@ -448,18 +448,18 @@ The UI is designed to be simple and intuitive, as seen in Figure \ref{fig:web-in
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{webinterface/image.png}
+    \includegraphics[width=0.8\textwidth]{webinterface/3d.png}
     \caption{Web Interface for Visualizing Geometric Simplicial Complexes}
     \label{fig:web-interface}
 \end{figure}
 
-The interface is divided in half: on the left side there are two selectable text areas, one for the DSL code and one for the spatial logic queries, and on the right side there is a 3D visualization of the geometric simplicial complexes defined in the DSL code. The visualization is in 3D and interactive because we are planning to extend the DSL to 3D simplicial complexes in the future.
+The interface is divided in half: on the left side there are two selectable text areas, one for the DSL code and one for the spatial logic queries, and on the right side there is a 3D visualization of the geometric simplicial complexes defined in the DSL code.
 
-In the bottom right corner there are the results of the spatial logic queries, which are displayed as a list of simplices that satisfy the query. The user can select a property of the results by clicking the "Draw Results" button, and the simplices that satisfy the query will be highlighted in the 3D visualization.
+In the bottom right corner there are the results of the spatial logic queries, which are displayed as a list of simplices that satisfy the query. The user can select a property of the results by clicking the ``Draw Results'' button, and the simplices that satisfy the query will be highlighted in the 3D visualization.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{webinterface/query.png}
+    \includegraphics[width=0.8\textwidth]{webinterface/3dquery.png}
     \caption{Web Interface for Visualizing Spatial Logic Query Results}
     \label{fig:web-interface-query}
 \end{figure}
@@ -467,7 +467,10 @@ In the bottom right corner there are the results of the spatial logic queries, w
 \subsection{3D and higher-dimensional}
 
 We can define also 3D simplicial complexes using the DSL, and the web interface will render them in 3D.
-The code is similar and intuitive, for example:
+The code is similar and intuitive, for example in Figure \ref{fig:web-interface}
+
+\newpage
+
 \begin{lstlisting}[language=Python, caption={DSL Code for 3D Simplicial Complex}, label={lst:3ddsl}]
 point A = (0, 0, 0)
 point B = (2, 0, 0)
@@ -494,7 +497,6 @@ complex shifted_boundary = clone_and_shift(tetra_boundary, 3, 8, 0, 2)
 \end{figure}
 
 \newpage 
-
 Furthermore, despite not being able to visualize higher-dimensional simplicial complexes, we can still define them using the DSL and export them to PolyLogicA for spatial logic reasoning. For example, we can define a 4D simplex as follows:
 \begin{lstlisting}[language=Python, caption={DSL Code for 4D Simplicial Complex}, label={lst:4ddsl}]
 point A = (0, 0, 0, 0)
@@ -528,84 +530,69 @@ render bound
 
     We define a simple 2D simplicial complex representing three triangles with some of their edges shared. The DSL code snippet is as follows:
     \begin{lstlisting}[language=Python, caption={DSL Code for Example 1}, label={lst:example1dsl}]
-point p0 = (0, 0)
-point p1 = (10, 0)
-point p2 = (5, 10)
-point p3 = (15, 10)
-point p4 = (10, 20)
+point A = (0, 0, 0)
+point B = (2 , 0 , 0)
+point C = (1 , 1.732 , 0)
+point D = (1 , 0.577 , 1.633)
 
-complex t1 = [p0, p1, p2]
-complex t2 = [p1, p3, p2]
-complex t3 = [p2, p3, p4]
+complex tetrahedron = translate(scale([A , B , C , D ], 4), (0, 0, 1))
+complex tetrahedron_rotated = rotate(tetrahedron, 60) 
     \end{lstlisting}
 
-This will generate the simplicial complex seen in Figure \ref{fig:example1}. The downward closure of this complex will include all vertices, edges, and faces, which will be serialized into a poset for PolyLogicA.
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.6\textwidth]{example1/plain.png}
-    \caption{Simplicial Complex from Example 1}
-    \label{fig:example1}
-\end{figure}
-
-We can then apply spatial logic queries to this complex using PolyLogicA. For example:
+This will generate the simplicial complex seen in Figure \ref{fig:example1-plain}. The downward closure of this complex will include all vertices, edges, and faces, which will be serialized into a poset for PolyLogicA. We can then apply spatial logic queries to this complex using PolyLogicA. For example:
 
 \begin{lstlisting}[language=Python, caption={Query for Example 1}, label={lst:example1query2}]
-let t1 = ap("t1")
-let t2 = ap("t2")
-let t3 = ap("t3")
+let t1 = ap("tetrahedron")
+let t2 = ap("tetrahedron_rotated")
+let intersection = t1 & t2
+save "int" intersection 
+\end{lstlisting}
 
-let commonedge = t1 & t2
-save "commonedge" commonedge
-
-let tripleintersection = t1 & t2 & t3
-save "tripleintersection" tripleintersection
-    \end{lstlisting}
+And the result of this query is shown in Figure \ref{fig:example1-query}. The intersection of the two complexes is a single triangle, which is highlighted in green in the figure.
 
 \begin{figure}[h]
     \centering
     \begin{minipage}{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{example1/query2.png}
-        \caption{Result of the Query for Example 1}
-        \label{fig:example1-query}
+        \includegraphics[width=\textwidth]{ex4/plain.png}
+        \caption{Result of the rendering of Example 1}
+        \label{fig:example1-plain}
     \end{minipage}\hfill
     \begin{minipage}{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{example1/query1.png}
+        \includegraphics[width=\textwidth]{ex4/q.png}
         \caption{Result of the Query for Example 1}
-        \label{fig:example2-query}
+        \label{fig:example1-query}
     \end{minipage}
 \end{figure}
 
 We can also define more complex objects using functions and operations. For example:
     \begin{lstlisting}[language=Python, caption={DSL Code for Example 2}, label={lst:example2dsl}]
-point p0 = (0, 0)
-point p1 = (10, 0)
-point p2 = (5, 10)
+point p0 = (0, 0, 0)
+point p1 = (2, 0, 0)
+point p2 = (1, 1.7, 0)
+point p3 = (1, 0.5, 1.6)
+complex t1 = scale([p0, p1, p2, p3], 4)
 
-complex t1 = [p0, p1, p2]
-
-function shift(dx, dy) {
-    point offset = (dx, dy)
-    return translate(t1, offset)
+function shift (dx ,dy ) {
+point offset = (dx ,dy )
+    return translate(t1 , offset )
 }
-
 complex t2 = shift(10, 0)
 complex t3 = shift(20, 0)
 complex t4 = shift(10, 15)
-complex together = union(t1, union(t2, union(t3, t4)))
+complex together = union (t1 , union(t2 , union(t3 , t4 )))
     \end{lstlisting}
 
 The resulting complex is shown in Figure \ref{fig:example2}. It consists of four triangles, with some of them sharing edges and vertices.
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.6\textwidth]{example2/query1.png}
+    \includegraphics[width=0.6\textwidth]{example4/plain.png}
     \caption{Resulting Complex from Example 2}
     \label{fig:example2}
 \end{figure}
 
-And we can apply spatial logic queries to this complex to check for connected components by using the $\gamma$ operator, which computes the closure of a complex with respect to another complex. For example, we can check if $together$ is connected to $t2$ by computing the closure of $together$ with respect to $t2$:
+And we can apply spatial logic queries to this complex to check for connected components by using the $\mathcal{U}$ operator, which computes the closure of a complex with respect to another complex. For example, we can check if $together$ is connected to $t2$ by computing the closure of $together$ with respect to $t2$:
     \begin{lstlisting}[language=Python, caption={Query for Example 2}, label={lst:example2query}]
 let t1 = ap("t1")
 let t2 = ap("t2")
@@ -613,11 +600,25 @@ let t3 = ap("t3")
 let t4 = ap("t4")
 
 let together = ap("together")
-
 let near = gamma(together, t2)
-
 save "near" near
     \end{lstlisting}
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage} {0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{example4/test1.png}
+        \caption{Result of the Query for Example 2 with scale factor = 4}
+        \label{fig:example2-query}
+    \end{minipage}
+    \begin{minipage} {0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{example4/test2.png}
+        \caption{Result of the Query for Example 2 with scale factor = 5}
+        \label{fig:example2-query2}
+    \end{minipage}
+\end{figure}
 
 \begin{remark}
     In this project I am treating the geometric simplicial complexes as formulas. In a future version of the DSL, I would like to treat them only as models that can have different assigned properties (for example, color or other attributes) and then use the spatial logic to reason about these properties. This would allow for a more expressive and flexible DSL, where the user can define complex spatial relationships and properties, and then use the spatial logic to reason about them.
@@ -631,7 +632,6 @@ I also implemented the currying of functions, which allows for more expressive d
 For example, I can define a function that takes an angle and returns a function that takes a complex and rotates it by that angle:
 
 \newpage
-
     \begin{lstlisting}[language=Python, caption={DSL Code for Example 3}, label={lst:example3dsl}]
 function rotate_by(angle) {
     function rotate_complex(complex) {

@@ -1,21 +1,15 @@
 window.require(["vs/editor/editor.main"], function () {
     // 1. Create the data models (the "files")
     const dslModel = monaco.editor.createModel(
-`// Define points in 2D space
-point p0 = (0, 0)
-point p1 = (10, 0)
-point p2 = (5, 10)
-point p3 = (15, 10)
-point p4 = (10, 20)
+`// Define points in 3D space
+point A = (0, 0, 0)
+point B = (2 , 0 , 0)
+point C = (1 , 1.732 , 0)
+point D = (1 , 0.577 , 1.633)
 
-// Complex 1: blue (Left Triangle)
-complex t1 = [p0, p1, p2]
+complex tetrahedron = translate(scale([A , B , C , D ], 4), (0, 0, 1))
 
-// Complex 2: red (Middle Triangle, shares edge [p1, p2] with blue)
-complex t2 = [p1, p3, p2]
-
-// Complex 3: green (Top Triangle, shares edge [p2, p3] with red)
-complex t3 = [p2, p3, p4]
+complex tetrahedron_rotated = rotate(tetrahedron, 60) 
 `, 
         "plaintext"
     );
@@ -23,28 +17,12 @@ complex t3 = [p2, p3, p4]
     const imgqlModel = monaco.editor.createModel(
     `// Write your PolyLogicA queries here
 // 2. Bind the atomic propositions to your JSON atoms
-let t1 = ap("t1")
-let t2 = ap("t2")
-let t3 = ap("t3")
+let t1 = ap("tetrahedron")
+let t2 = ap("tetrahedron_rotated")
 
-// 3. Define the spatial logic formulas
-let neart1 = N(t1)
-let orT1T2 = t1 | t2
-let andT1T2 = t1 & t2
-let gammaT2T3 = gamma(t2, t3)
+let intersection = t1 & t2
 
-// Advanced test: find the exact vertex where all three regions meet
-let tripleIntersection = t1 & t2 & t3
-
-// 4. Save the results to disk
-save "eval_t2" t2
-save "eval_t3" t3
-save "eval_t1" t1
-save "eval_neart1" neart1
-save "eval_orT1T2" orT1T2
-save "eval_andT1T2" andT1T2
-save "eval_gammaT2T3" gammaT2T3
-save "eval_tripleIntersection" tripleIntersection
+save "int" intersection 
 `, 
         "plaintext"
     );

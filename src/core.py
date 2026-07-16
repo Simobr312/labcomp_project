@@ -21,6 +21,14 @@ class Point:
     @property
     def y(self) -> float:
         return self.coords[1] if len(self.coords) > 1 else 0.0
+    
+    def __eq__(self, other):
+        if not isinstance(other, Point):
+            return False
+        return all(round(a, 3) == round(b, 3) for a, b in zip(self.coords, other.coords))
+    
+    def __hash__(self):
+        return hash(tuple(round(c, 3) for c in self.coords))
 
 @dataclass
 class Complex:
