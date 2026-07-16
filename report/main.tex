@@ -230,8 +230,6 @@ They are implemented in the following files:
 
 \dirtree{%
 .1 project-root/.
-.2 report/.
-.3 main.tex.
 .2 src/.
 .3 parser.py.
 .3 core.py.
@@ -240,10 +238,13 @@ They are implemented in the following files:
 .3 index.html.
 .3 render.js.
 .3 visualization.js.
+.2 server.py.
 }
 
 \subsection{Syntax}
 The syntax of the DSL is designed for defining geometric simplicial complexes in a concise manner. The language allows users to specify vertices, simplices, and operations on them.
+
+\newpage
 
 \begin{lstlisting}[language=Python,caption={Grammar of the Geometric DSL}, label={lst:grammar}]
     program: statement*

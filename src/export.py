@@ -3,7 +3,7 @@ import itertools
 import json
 from collections import defaultdict
 from typing import Any
-from core import Complex, Point
+from src.core import Complex, Point
 
 type ComplexEnv = dict[str, Complex]
 

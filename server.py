@@ -8,9 +8,9 @@ from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 
 # Import from our new geometric DSL modules
-from parser import parse_ast
-from core import eval_program
-from export import serialize_environment, export_polylogica_json
+from src.parser import parse_ast
+from src.core import eval_program
+from src.export import serialize_environment, export_polylogica_json
 
 app = FastAPI()
 

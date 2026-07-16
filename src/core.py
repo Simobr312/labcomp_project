@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
 # Updated imports to match modifications in parser
-from parser import NumberLiteral, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall, RenderStmt, FunctionDecl, ReturnStmt, FuncCall
+from src.parser import NumberLiteral, Statement, PointDecl, ComplexDecl, Assign, Expr, PointLiteral, ComplexLiteral, OpCall, RenderStmt, FunctionDecl, ReturnStmt, FuncCall
 
 # == Core Geometric Data Structures == #
 @dataclass(frozen=True)
