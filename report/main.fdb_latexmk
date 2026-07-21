@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1784208944.24092 "/home/simobr/Desktop/DSL/report/main.tex" "main.pdf" "main" 1784208949.10218 0
+["pdflatex"] 1784621061.42374 "/home/simobr/Desktop/DSL/report/main.tex" "main.pdf" "main" 1784621066.09619 0
   "/etc/texmf/web2c/texmf.cnf" 1760793114.68236 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/simobr/Desktop/DSL/report/main.tex" 1784208941.57391 36052 e29df13e63b5ce490d06d892aaa76e36 ""
+  "/home/simobr/Desktop/DSL/report/main.tex" 1784621064.99475 36033 c05221570e999e1a4419b0e05aa03000 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/ecrm1095.tfm" 1136768653 3584 929cdff2b7a8c11bd4d49fd68cb0ae70 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm" 1246382020 916 f87d7c45f9c908e672703b83b72241a3 ""
@@ -256,9 +256,9 @@
   "example4/plain.png" 1784198285.10716 218386 2861d6fcaecd0c40f254cb961630637d ""
   "example4/test1.png" 1784198873.14972 211294 3e7ce6dabd6c4b96b11f8e56b7e5868d ""
   "example4/test2.png" 1784199455.99009 197114 62ffaf3a2afc943ff057930641cbe4fa ""
-  "main.aux" 1784208948.90642 9720 73082c1e7d6a9fbcaa063b9abacbaff0 "pdflatex"
-  "main.out" 1784208948.90842 3547 ff507c386b6203df427f48fb8b4b741a "pdflatex"
-  "main.tex" 1784208941.57391 36052 e29df13e63b5ce490d06d892aaa76e36 ""
+  "main.aux" 1784621065.90992 9714 3a86380fc21d1f745c6f7eb01ab2add6 "pdflatex"
+  "main.out" 1784621065.91092 3547 ff507c386b6203df427f48fb8b4b741a "pdflatex"
+  "main.tex" 1784621064.99475 36033 c05221570e999e1a4419b0e05aa03000 ""
   "simplicialcomplex.png" 1784102195.43051 75163 73636a029cc2944495f005e2d1c79e8a ""
   "webinterface/3d.png" 1784206917.71833 303334 294188ad3c0aa6cbaa6bd9851d7a3466 ""
   "webinterface/3dquery.png" 1784207990.60864 230982 75dc37c7c12f39bf2bdff2908341ef29 ""
